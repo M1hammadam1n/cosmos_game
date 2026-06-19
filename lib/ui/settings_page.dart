@@ -73,21 +73,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     vertical: 20,
                   ),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                     
                       Stack(
                         alignment: Alignment.topCenter,
                         clipBehavior: Clip.none,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.only(
-                              top: 60,
-                            ),child: Container(
-                              width:
-                                  280,
-                              height:
-                                  340,
+                            padding: const EdgeInsets.only(top: 60),
+                            child: Container(
+                              width: 280,
+                              height: 340,
                               decoration: const BoxDecoration(
                                 image: DecorationImage(
                                   image: AssetImage(
@@ -100,11 +95,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 28,
                                 55,
                                 28,
-                                20,
+                                15,
                               ),
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment
-                                    .spaceBetween,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
                                   Row(
                                     mainAxisAlignment:
@@ -148,10 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       ),
                                     ],
                                   ),
-
-                                  const SizedBox(
-                                    height: 5,
-                                  ),
+                                  SizedBox(height: 20),
                                   GestureDetector(
                                     onTap: () async {
                                       await GameAudioController.instance
@@ -184,7 +175,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       fit: BoxFit.contain,
                                     ),
                                   ),
-                                  SizedBox(height: 10)
+
+                                  // КНОПКА BACK В НИЗУ КОНТЕЙНЕРА
                                 ],
                               ),
                             ),
@@ -198,6 +190,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                         ],
+                      ),
+                      GestureDetector(
+                        onTap: () async {
+                          await GameAudioController.instance.playButtonSound();
+                          if (!context.mounted) return;
+                          Navigator.of(context).pop();
+                        },
+                        child: Image.asset(
+                          'assets/images/button_back.png',
+                          width: 220,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ],
                   ),

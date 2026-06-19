@@ -120,9 +120,7 @@ class _StartMenuState extends State<StartMenu> {
   }
 }
 
-// --- ОТДЕЛЬНАЯ СТРАН
-
-class _SettingsSwitch extends StatelessWidget {
+class _SettingsSwitch extends StatefulWidget {
   const _SettingsSwitch({
     required this.icon,
     required this.title,
@@ -136,24 +134,29 @@ class _SettingsSwitch extends StatelessWidget {
   final ValueChanged<bool> onChanged;
 
   @override
+  State<_SettingsSwitch> createState() => _SettingsSwitchState();
+}
+
+class _SettingsSwitchState extends State<_SettingsSwitch> {
+  @override
   Widget build(BuildContext context) {
     return SwitchListTile(
       contentPadding: EdgeInsets.zero,
-      secondary: Icon(icon, color: const Color(0xFF00E5FF)),
+      secondary: Icon(widget.icon, color: const Color(0xFF00E5FF)),
       title: Text(
-        title,
+        widget.title,
         style: const TextStyle(
           color: Color(0xFFEAFBFF),
           fontSize: 16,
           fontWeight: FontWeight.w800,
         ),
       ),
-      value: value,
+      value: widget.value,
       activeThumbColor: const Color(0xFFFFF176),
       activeTrackColor: const Color(0x9900E5FF),
       inactiveThumbColor: const Color(0xFFBDEFFF),
       inactiveTrackColor: const Color(0x66071024),
-      onChanged: onChanged,
+      onChanged: widget.onChanged,
     );
   }
 }
