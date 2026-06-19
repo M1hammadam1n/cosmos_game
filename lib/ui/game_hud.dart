@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../audio/game_audio_controller.dart';
 import '../game.dart';
 
 class GameHud extends StatelessWidget {
@@ -55,12 +56,50 @@ class _ScoreBar extends StatelessWidget {
           listenable: game.stars,
           icon: Icons.star_rounded,
         ),
+        _ExitButton(onPressed: game.onExitToMenu),
         _HudPill(
           label: 'BEST',
           listenable: game.bestStars,
           icon: Icons.bolt_rounded,
         ),
       ],
+    );
+  }
+}
+
+class _ExitButton extends StatelessWidget {
+  const _ExitButton({required this.onPressed});
+
+  final Future<void> Function() onPressed;
+
+  Future<void> _handlePressed() async {
+    await GameAudioController.instance.playButtonSound();
+    await onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 46,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: const Color(0xDD081025),
+          border: Border.all(color: const Color(0xAAFFF176), width: 1.3),
+          borderRadius: BorderRadius.circular(8),
+          boxShadow: const <BoxShadow>[
+            BoxShadow(color: Color(0x66FFF176), blurRadius: 18),
+          ],
+        ),
+        child: IconButton(
+          tooltip: 'На главную',
+          onPressed: _handlePressed,
+          icon: const Icon(
+            Icons.home_rounded,
+            size: 24,
+            color: Color(0xFFFFF176),
+          ),
+        ),
+      ),
     );
   }
 }

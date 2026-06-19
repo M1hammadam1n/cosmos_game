@@ -7,13 +7,14 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'audio/game_audio_controller.dart';
 import 'lane_manager.dart';
 import 'obstacle.dart';
 import 'player_car.dart';
 import 'ui/game_over.dart';
 
 class CyberRunnerGame extends FlameGame with HasCollisionDetection {
-  CyberRunnerGame()
+  CyberRunnerGame({required this.onExitToMenu})
     : lanes = LaneManager(),
       stars = ValueNotifier<int>(0),
       bestStars = ValueNotifier<int>(0),
@@ -25,6 +26,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   final ValueNotifier<int> stars;
   final ValueNotifier<int> bestStars;
   final ValueNotifier<bool> isGameOver;
+  final Future<void> Function() onExitToMenu;
 
   late final Sprite playerSprite;
   late final Sprite obstacleSprite;
@@ -152,6 +154,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
 
     _runIsActive = false;
     isGameOver.value = true;
+    unawaited(GameAudioController.instance.playCrashVibration());
 
     if (stars.value > bestStars.value) {
       bestStars.value = stars.value;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../audio/game_audio_controller.dart';
 import '../game.dart';
 
 class GameOverOverlay extends StatelessWidget {
@@ -51,31 +52,88 @@ class GameOverOverlay extends StatelessWidget {
                       value: game.bestStars.value,
                     ),
                     const SizedBox(height: 26),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: FilledButton.icon(
-                        onPressed: game.restart,
-                        icon: const Icon(Icons.restart_alt_rounded),
-                        label: const Text('Restart'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: const Color(0xFF00E5FF),
-                          foregroundColor: const Color(0xFF04111F),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
+                    _GameOverButton(
+                      icon: Icons.restart_alt_rounded,
+                      label: 'Restart',
+                      filled: true,
+                      onPressed: game.restart,
+                    ),
+                    const SizedBox(height: 12),
+                    _GameOverButton(
+                      icon: Icons.home_rounded,
+                      label: 'На главную',
+                      onPressed: game.onExitToMenu,
                     ),
                   ],
                 ),
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GameOverButton extends StatelessWidget {
+  const _GameOverButton({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.filled = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final Future<void> Function() onPressed;
+  final bool filled;
+
+  Future<void> _handlePressed() async {
+    await GameAudioController.instance.playButtonSound();
+    await onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8),
+    );
+    final textStyle = const TextStyle(
+      fontSize: 17,
+      fontWeight: FontWeight.w900,
+      letterSpacing: 0,
+    );
+
+    if (filled) {
+      return SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: FilledButton.icon(
+          onPressed: _handlePressed,
+          icon: Icon(icon),
+          label: Text(label),
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFF00E5FF),
+            foregroundColor: const Color(0xFF04111F),
+            shape: shape,
+            textStyle: textStyle,
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton.icon(
+        onPressed: _handlePressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: const Color(0xFFEAFBFF),
+          side: const BorderSide(color: Color(0xFFFF2BD6), width: 1.3),
+          shape: shape,
+          textStyle: textStyle,
         ),
       ),
     );

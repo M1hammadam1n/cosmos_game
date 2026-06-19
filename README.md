@@ -1,4 +1,4 @@
-# cosmos_game
+# Space Chicken
 
 A new Flutter project.
 
