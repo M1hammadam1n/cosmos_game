@@ -1,9 +1,7 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:space_chicken/ui/settings_page.dart';
-
 import '../audio/game_audio_controller.dart';
 
 class StartMenu extends StatefulWidget {
@@ -16,15 +14,10 @@ class StartMenu extends StatefulWidget {
 }
 
 class _StartMenuState extends State<StartMenu> {
-  // Переменные состояния настроек теперь хранятся на уровне приложения/контроллера
-  // или передаются в экран настроек. Для синхронизации данных при возврате
-  // мы просто вызываем setState, чтобы обновить интерфейс главного меню, если это необходимо.
 
   Future<void> _openSettings() async {
     await GameAudioController.instance.playTransitionSound();
     if (!mounted) return;
-
-    // Мгновенный переход на отдельный экран без анимации
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
         pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
@@ -32,8 +25,6 @@ class _StartMenuState extends State<StartMenu> {
         reverseTransitionDuration: Duration.zero,
       ),
     );
-
-    // Обновляем состояние главного меню после возврата с экрана настроек
     setState(() {});
   }
 
