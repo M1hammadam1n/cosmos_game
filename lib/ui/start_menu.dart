@@ -14,13 +14,13 @@ class StartMenu extends StatefulWidget {
 }
 
 class _StartMenuState extends State<StartMenu> {
-
   Future<void> _openSettings() async {
     await GameAudioController.instance.playTransitionSound();
     if (!mounted) return;
     await Navigator.of(context).push(
       PageRouteBuilder<void>(
-        pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const SettingsScreen(),
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
@@ -60,7 +60,8 @@ class _StartMenuState extends State<StartMenu> {
                         children: [
                           GestureDetector(
                             onTap: () async {
-                              await GameAudioController.instance.playButtonSound();
+                              await GameAudioController.instance
+                                  .playButtonSound();
                               await widget.onStart();
                             },
                             child: Image.asset(
@@ -84,7 +85,8 @@ class _StartMenuState extends State<StartMenu> {
                               const SizedBox(width: 16),
                               GestureDetector(
                                 onTap: () async {
-                                  await GameAudioController.instance.playButtonSound();
+                                  await GameAudioController.instance
+                                      .playButtonSound();
                                   await SystemNavigator.pop();
                                 },
                                 child: Image.asset(
@@ -162,8 +164,16 @@ class _StarFieldPainter extends CustomPainter {
       ..color = const Color(0x2200E5FF)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 36);
 
-    canvas.drawCircle(Offset(size.width * 0.24, size.height * 0.18), 74, glowPaint);
-    canvas.drawCircle(Offset(size.width * 0.78, size.height * 0.72), 96, glowPaint);
+    canvas.drawCircle(
+      Offset(size.width * 0.24, size.height * 0.18),
+      74,
+      glowPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.78, size.height * 0.72),
+      96,
+      glowPaint,
+    );
 
     for (var i = 0; i < 72; i++) {
       final x = ((i * 67) % math.max(size.width.toInt(), 1)).toDouble();

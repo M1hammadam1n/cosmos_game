@@ -26,7 +26,10 @@ class GameOverOverlay extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 boxShadow: const <BoxShadow>[
                   BoxShadow(color: Color(0xAA00E5FF), blurRadius: 28),
-                  BoxShadow(color: Color(0x66FF2BD6), blurRadius: 40),
+                  BoxShadow(
+                    color: Color.fromARGB(102, 135, 43, 255),
+                    blurRadius: 40,
+                  ),
                 ],
               ),
               child: Padding(

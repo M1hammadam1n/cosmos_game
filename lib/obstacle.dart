@@ -1,61 +1,84 @@
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 
-import 'game.dart';
-import 'player_car.dart';
+import 'game.dart'; // Путь к вашему файлу CyberRunnerGame
+import 'player_car.dart'; // Путь к вашему файлу PlayerCar
 
-class Obstacle extends SpriteComponent
+class Obstacle extends SpriteComponent 
     with CollisionCallbacks, HasGameReference<CyberRunnerGame> {
+  
+  // Номер дорожки, на которой находится объект
+  final int lane;
+  
+  // Количество очков. Если положительное (15, 50, 150) — это яйцо-бонус. 
+  // Если отрицательное (-10, -15, -20, -35) — это препятствие.
+  final int scoreChange; 
+
   Obstacle({
     required Sprite sprite,
     required this.lane,
     required Vector2 position,
     required Vector2 size,
+    required this.scoreChange, 
   }) : super(
          sprite: sprite,
          position: position,
          size: size,
-         anchor: Anchor.center,
-         priority: 12,
+         anchor: Anchor.center, // Центрируем объект для плавного выравнивания
        );
-
-  final int lane;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    add(
-      RectangleHitbox.relative(
-        Vector2(0.62, 0.66),
-        parentSize: size,
-        anchor: Anchor.center,
-      )..collisionType = CollisionType.passive,
-    );
+    
+    // Добавляем хитбокс (зону столкновения). 
+    // Делаем его чуть меньше физического размера картинки (85%), 
+    // чтобы игроку было комфортнее уворачиваться, и не было "ложных" аварий по краям текстуры.
+    add(RectangleHitbox(
+      size: size * 0.85,
+      anchor: Anchor.center,
+      position: size / 2,
+      collisionType: CollisionType.passive, // Пассивный тип, так как объект просто движется по рельсам
+    ));
   }
 
   @override
   void update(double dt) {
     super.update(dt);
+    
+    // Двигаем объект вниз по экрану со скоростью, которая растет со временем в игре
     position.y += game.obstacleSpeed * dt;
 
-    if (position.y - size.y > game.size.y + 40) {
+    // Оптимизация памяти: если объект полностью ушел за нижнюю границу экрана,
+    // мы удаляем его из игры, чтобы он не тратил ресурсы смартфона
+    if (position.y > game.size.y + size.y) {
       removeFromParent();
     }
   }
 
+  // Этот метод вызывается автоматически движком при изменении размеров экрана (например, поворот устройства)
+  void applyLayout() {
+    size = game.obstacleSize;
+    position.x = game.lanes.laneCenterX(lane);
+  }
+
+  // Обработка столкновения
   @override
   void onCollisionStart(
     Set<Vector2> intersectionPoints,
     PositionComponent other,
   ) {
     super.onCollisionStart(intersectionPoints, other);
-    if (other is PlayerCar) {
-      game.endRun();
-    }
-  }
 
-  void applyLayout() {
-    size = game.obstacleSize;
-    position.x = game.lanes.laneCenterX(lane);
+    // Проверяем, врезался ли объект именно в машину игрока
+    if (other is PlayerCar) {
+      // Вызываем метод изменения очков в главном классе игры.
+      // Если врезались в препятствие -> передастся минус и игра может закончиться (Game Over).
+      // Если поймали яйцо -> передастся плюс и очки увеличатся.
+      game.modifyScore(scoreChange);
+      
+      // Сразу убираем объект с экрана, чтобы столкновение не засчиталось повторно в следующем кадре
+      removeFromParent();
+    }
   }
 }

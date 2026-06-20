@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -29,7 +28,18 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   final Future<void> Function() onExitToMenu;
 
   late final Sprite playerSprite;
-  late final Sprite obstacleSprite;
+  
+  // Бонусы (Яйца)
+  late final Sprite eggJuniorSprite;
+  late final Sprite eggMiddleSprite;
+  late final Sprite eggSuperSprite;
+
+  // Препятствия
+  late final Sprite obstacle1Sprite;
+  late final Sprite obstacle2Sprite;
+  late final Sprite obstacle3Sprite;
+  late final Sprite obstacle4Sprite;
+
   late PlayerCar player;
   late RoadComponent road;
 
@@ -40,12 +50,18 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   double _spawnTimer = 0;
   double _elapsed = 0;
   bool _runIsActive = true;
-
+  
+  int _scoreModifier = 0;
   double obstacleSpeed = 250;
+
+  // --- Независимые таймеры для бонусов ---
+  double _eggJuniorCooldown = 10.0;
+  double _eggMiddleCooldown = 20.0;
+  double _eggSuperCooldown = 30.0;
 
   Vector2 get playerSize {
     final width = lanes.normalizedCarWidth();
-    return Vector2(width, width * 1.72);
+    return Vector2(width, width * 1.72) * 1.4;
   }
 
   Vector2 get obstacleSize {
@@ -57,19 +73,30 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   Future<void> onLoad() async {
     await super.onLoad();
     lanes.resize(size);
-
     _preferences = await SharedPreferences.getInstance();
     bestStars.value = _preferences?.getInt(_bestScoreKey) ?? 0;
 
-    // Sprites are generated once at startup so the components can still use
-    // Flame's SpriteComponent pipeline without requiring external art files.
-    playerSprite = Sprite(await _createPlayerSprite());
-    obstacleSprite = Sprite(await _createObstacleSprite());
+    playerSprite = await loadSprite('object_for_line.png');
+    
+    // Загрузка бонусов
+    eggJuniorSprite = await loadSprite('egg_junior.png');
+    eggMiddleSprite = await loadSprite('egg_middle.png');
+    eggSuperSprite = await loadSprite('egg_super.png');
+
+    // Загрузка препятствий
+    obstacle1Sprite = await loadSprite('obstacles_1.png');
+    obstacle2Sprite = await loadSprite('obstacles_2.png');
+    obstacle3Sprite = await loadSprite('obstacles_3.png');
+    obstacle4Sprite = await loadSprite('obstacles_4.png');
 
     road = RoadComponent();
     add(road);
 
     _createPlayer();
+    
+    // Первичная инициализация случайных интервалов
+    _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0; // 20-25 секунд
+    _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0; // 30-40 секунд
   }
 
   @override
@@ -94,38 +121,155 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   @override
   void update(double dt) {
     super.update(dt);
-    if (!_runIsActive) {
-      return;
-    }
+    if (!_runIsActive) return;
 
-    // Distance is the single progression source: it awards stars, raises
-    // obstacle speed, and indirectly compresses spawn timing over time.
     _elapsed += dt;
-    obstacleSpeed = 250 + (_elapsed * 9);
+    obstacleSpeed = math.min(650, 250 + (_elapsed * 9));
     _distance += obstacleSpeed * dt;
 
-    final nextStars = _distance ~/ 90;
+    final distanceScore = _distance ~/ 90;
+    final nextStars = distanceScore + _scoreModifier;
+    
     if (nextStars != stars.value) {
       stars.value = nextStars;
     }
 
+    // Проверяем, наступила ли фаза ускорения (скорость > 500)
+    final isAccelerated = obstacleSpeed > 500;
+
+    // 1. Появление обычных препятствий
     _spawnTimer -= dt;
     if (_spawnTimer <= 0) {
-      _spawnObstacle();
+      _spawnObstacle(isAccelerated);
       _spawnTimer = _nextSpawnDelay();
     }
+
+    // 2. Таймер Egg Junior: 2 штуки каждые 10 секунд (работает всегда)
+    _eggJuniorCooldown -= dt;
+    if (_eggJuniorCooldown <= 0) {
+      _spawnEggJunior(2);
+      _eggJuniorCooldown = 10.0;
+    }
+
+    // 3. Таймер Egg Middle: 1 штука каждые 20-25 секунд (работает всегда)
+    _eggMiddleCooldown -= dt;
+    if (_eggMiddleCooldown <= 0) {
+      _spawnBonusEgg(eggMiddleSprite, 50);
+      _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0;
+    }
+
+    // 4. Таймер Egg Super: 1 штука каждые 30-40 секунд (ТОЛЬКО после ускорения)
+    if (isAccelerated) {
+      _eggSuperCooldown -= dt;
+      if (_eggSuperCooldown <= 0) {
+        _spawnBonusEgg(eggSuperSprite, 150);
+        _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0;
+      }
+    }
+  }
+
+  void modifyScore(int value) {
+    if (!_runIsActive) return;
+
+    _scoreModifier += value;
+    stars.value = (_distance ~/ 90) + _scoreModifier;
+
+    if (stars.value < 0) {
+      endRun();
+    }
+  }
+
+  // Спавн обычных препятствий (минус очки)
+  void _spawnObstacle(bool isAccelerated) {
+    final lane = _random.nextInt(lanes.laneCount);
+    final position = Vector2(
+      lanes.laneCenterX(lane),
+      lanes.roadRect.top - obstacleSize.y,
+    );
+
+    Sprite selectedSprite;
+    int scoreValue;
+
+    if (isAccelerated) {
+      // ПОСЛЕ УСКОРЕНИЯ: Могут появляться все препятствия (1, 2, 3, 4)
+      final rand = _random.nextInt(100);
+      if (rand < 30) {
+        selectedSprite = obstacle1Sprite;
+        scoreValue = -10;
+      } else if (rand < 60) {
+        selectedSprite = obstacle2Sprite;
+        scoreValue = -15;
+      } else if (rand < 80) {
+        selectedSprite = obstacle4Sprite;
+        scoreValue = -20;
+      } else {
+        selectedSprite = obstacle3Sprite;
+        scoreValue = -35; // Самое опасное препятствие
+      }
+    } else {
+      // ДО УСКОРЕНИЯ: Только частые obstacles_1 и obstacles_2
+      final rand = _random.nextBool();
+      if (rand) {
+        selectedSprite = obstacle1Sprite;
+        scoreValue = -10;
+      } else {
+        selectedSprite = obstacle2Sprite;
+        scoreValue = -15;
+      }
+    }
+
+    add(Obstacle(
+      sprite: selectedSprite,
+      lane: lane,
+      position: position,
+      size: obstacleSize,
+      scoreChange: scoreValue,
+    ));
+  }
+
+  // Спавн сразу 2 штук Egg Junior в разные случайные полосы
+  void _spawnEggJunior(int count) {
+    List<int> availableLanes = List.generate(lanes.laneCount, (i) => i);
+    availableLanes.shuffle(_random);
+
+    for (int i = 0; i < math.min(count, lanes.laneCount); i++) {
+      final lane = availableLanes[i];
+      final position = Vector2(
+        lanes.laneCenterX(lane),
+        lanes.roadRect.top - obstacleSize.y,
+      );
+      add(Obstacle(
+        sprite: eggJuniorSprite,
+        lane: lane,
+        position: position,
+        size: obstacleSize,
+        scoreChange: 15,
+      ));
+    }
+  }
+
+  // Спавн одиночного среднего или супер-яйца
+  void _spawnBonusEgg(Sprite sprite, int scoreChange) {
+    final lane = _random.nextInt(lanes.laneCount);
+    final position = Vector2(
+      lanes.laneCenterX(lane),
+      lanes.roadRect.top - obstacleSize.y,
+    );
+    add(Obstacle(
+      sprite: sprite,
+      lane: lane,
+      position: position,
+      size: obstacleSize,
+      scoreChange: scoreChange,
+    ));
   }
 
   void moveLeft() {
-    if (_runIsActive) {
-      player.moveToLane(player.lane - 1);
-    }
+    if (_runIsActive) player.moveToLane(player.lane - 1);
   }
 
   void moveRight() {
-    if (_runIsActive) {
-      player.moveToLane(player.lane + 1);
-    }
+    if (_runIsActive) player.moveToLane(player.lane + 1);
   }
 
   Future<void> restart() async {
@@ -137,10 +281,16 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     _distance = 0;
     _elapsed = 0;
     _spawnTimer = 0.45;
+    _scoreModifier = 0;
     obstacleSpeed = 250;
     stars.value = 0;
     isGameOver.value = false;
     _runIsActive = true;
+
+    // Сброс кулдаунов бонусов
+    _eggJuniorCooldown = 10.0;
+    _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0;
+    _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0;
 
     player
       ..lane = lanes.laneCount ~/ 2
@@ -148,9 +298,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   }
 
   Future<void> endRun() async {
-    if (!_runIsActive) {
-      return;
-    }
+    if (!_runIsActive) return;
 
     _runIsActive = false;
     isGameOver.value = true;
@@ -164,6 +312,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     overlays.add(GameOverOverlay.overlayId);
   }
 
+  // --- Исправленные методы, которые отсутствовали ---
   void _createPlayer() {
     final startLane = lanes.laneCount ~/ 2;
     player = PlayerCar(
@@ -175,123 +324,10 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     add(player);
   }
 
-  void _spawnObstacle() {
-    final lane = _random.nextInt(lanes.laneCount);
-    final position = Vector2(
-      lanes.laneCenterX(lane),
-      lanes.roadRect.top - obstacleSize.y,
-    );
-    add(
-      Obstacle(
-        sprite: obstacleSprite,
-        lane: lane,
-        position: position,
-        size: obstacleSize,
-      ),
-    );
-  }
-
   double _nextSpawnDelay() {
     final maxDelay = math.max(0.38, 1.05 - (_elapsed * 0.012));
     final minDelay = math.max(0.2, 0.55 - (_elapsed * 0.006));
     return minDelay + (_random.nextDouble() * (maxDelay - minDelay));
-  }
-
-  Future<ui.Image> _createPlayerSprite() async {
-    const width = 96;
-    const height = 168;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    final glowPaint = Paint()
-      ..color = const Color(0xAA00E5FF)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
-    final bodyPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: <Color>[Color(0xFF0DEBFF), Color(0xFF8B5CF6)],
-      ).createShader(Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
-    final glassPaint = Paint()..color = const Color(0xCC03111F);
-    final trimPaint = Paint()
-      ..color = const Color(0xFFFF2BD6)
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke;
-
-    final bodyPath = Path()
-      ..moveTo(width * 0.5, 6)
-      ..lineTo(width * 0.82, height * 0.26)
-      ..lineTo(width * 0.9, height * 0.78)
-      ..lineTo(width * 0.68, height - 8)
-      ..lineTo(width * 0.32, height - 8)
-      ..lineTo(width * 0.1, height * 0.78)
-      ..lineTo(width * 0.18, height * 0.26)
-      ..close();
-
-    canvas.drawPath(bodyPath, glowPaint);
-    canvas.drawPath(bodyPath, bodyPaint);
-    canvas.drawPath(bodyPath, trimPaint);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(28, 34, 40, 52),
-        const Radius.circular(12),
-      ),
-      glassPaint,
-    );
-    canvas.drawLine(
-      const Offset(20, 112),
-      const Offset(76, 112),
-      Paint()
-        ..color = const Color(0xFFFFF176)
-        ..strokeWidth = 4
-        ..strokeCap = StrokeCap.round,
-    );
-
-    final picture = recorder.endRecording();
-    return picture.toImage(width, height);
-  }
-
-  Future<ui.Image> _createObstacleSprite() async {
-    const width = 110;
-    const height = 128;
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder);
-
-    final glowPaint = Paint()
-      ..color = const Color(0x99FF2BD6)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
-    final corePaint = Paint()
-      ..shader = const RadialGradient(
-        colors: <Color>[Color(0xFFFFF176), Color(0xFFFF2BD6)],
-      ).createShader(Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
-    final edgePaint = Paint()
-      ..color = const Color(0xFF00E5FF)
-      ..strokeWidth = 5
-      ..style = PaintingStyle.stroke;
-
-    final body = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(18, 18, 74, 92),
-      const Radius.circular(18),
-    );
-    canvas.drawRRect(body, glowPaint);
-    canvas.drawRRect(body, corePaint);
-    canvas.drawRRect(body, edgePaint);
-    canvas.drawCircle(
-      const Offset(55, 64),
-      18,
-      Paint()..color = const Color(0xDD050713),
-    );
-    canvas.drawLine(
-      const Offset(32, 32),
-      const Offset(78, 96),
-      Paint()
-        ..color = const Color(0xFFFFFFFF)
-        ..strokeWidth = 4
-        ..strokeCap = StrokeCap.round,
-    );
-
-    final picture = recorder.endRecording();
-    return picture.toImage(width, height);
   }
 }
 

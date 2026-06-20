@@ -24,7 +24,7 @@ class GameHud extends StatelessWidget {
           left: 22,
           bottom: MediaQuery.paddingOf(context).bottom + 22,
           child: _LaneButton(
-            icon: Icons.chevron_left_rounded,
+            imagePath: 'assets/images/Left.png',
             onPressed: game.moveLeft,
           ),
         ),
@@ -32,7 +32,7 @@ class GameHud extends StatelessWidget {
           right: 22,
           bottom: MediaQuery.paddingOf(context).bottom + 22,
           child: _LaneButton(
-            icon: Icons.chevron_right_rounded,
+            imagePath: 'assets/images/Right.png',
             onPressed: game.moveRight,
           ),
         ),
@@ -158,35 +158,62 @@ class _HudPill extends StatelessWidget {
   }
 }
 
-class _LaneButton extends StatelessWidget {
-  const _LaneButton({required this.icon, required this.onPressed});
+class _LaneButton extends StatefulWidget {
+  const _LaneButton({
+    required this.imagePath, 
+    required this.onPressed,
+  });
 
-  final IconData icon;
+  final String imagePath;
   final VoidCallback onPressed;
 
   @override
+  State<_LaneButton> createState() => _LaneButtonState();
+}
+
+class _LaneButtonState extends State<_LaneButton> {
+  double _scale = 1.0;
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 74,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xDD081025),
-          border: Border.all(color: const Color(0xFFFF2BD6), width: 1.5),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(
-              color: Color(0x88FF2BD6),
-              blurRadius: 22,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: IconButton(
-          tooltip: icon == Icons.chevron_left_rounded
-              ? 'Move left'
-              : 'Move right',
-          onPressed: onPressed,
-          icon: Icon(icon, size: 46, color: const Color(0xFFEAFBFF)),
+    return GestureDetector(
+      onTapDown: (_) {
+        setState(() {
+          _scale = 1.15; 
+        });
+      },
+      onTapUp: (_) {
+        setState(() {
+          _scale = 1.0;
+        });
+        widget.onPressed();
+      },
+      onTapCancel: () {
+        setState(() {
+          _scale = 1.0;
+        });
+      },
+      behavior: HitTestBehavior.opaque, 
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 80),
+        curve: Curves.easeOutCubic, 
+        child: SizedBox(
+          width: 74,
+          height: 74,
+          child: Image.asset(
+            widget.imagePath,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return Icon(
+                widget.imagePath.contains('Left') 
+                    ? Icons.arrow_back_ios_new_rounded 
+                    : Icons.arrow_forward_ios_rounded,
+                size: 44,
+                color: const Color(0xFFFF2BD6),
+              );
+            },
+          ),
         ),
       ),
     );
