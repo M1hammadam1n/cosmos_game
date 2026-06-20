@@ -10,7 +10,7 @@ class Obstacle extends SpriteComponent
   // Номер дорожки, на которой находится объект
   final int lane;
   
-  // Количество очков. Если положительное (15, 50, 150) — это яйцо-бонус. 
+  // Количество очков. Если положительное (20, 45, 85) — это яйцо-бонус. 
   // Если отрицательное (-10, -15, -20, -35) — это препятствие.
   final int scoreChange; 
 
@@ -26,6 +26,12 @@ class Obstacle extends SpriteComponent
          size: size,
          anchor: Anchor.center, // Центрируем объект для плавного выравнивания
        );
+
+  // Переопределяем геттер priority. Flame запрашивает его напрямую при отрисовке.
+  // Теперь препятствия (scoreChange <= 0) ВСЕГДА имеют приоритет 20, 
+  // а яйца (scoreChange > 0) имеют приоритет 10. Препятствия будут строго ПОВЕРХ яиц.
+  @override
+  int get priority => scoreChange > 0 ? 25 : 20;
 
   @override
   Future<void> onLoad() async {

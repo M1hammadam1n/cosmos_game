@@ -54,8 +54,8 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   int _scoreModifier = 0;
   double obstacleSpeed = 250;
 
-  // --- Независимые таймеры для бонусов ---
-  double _eggJuniorCooldown = 10.0;
+  // --- Независимые таймеры для бонусов (Яиц) ---
+  double _eggJuniorCooldown = 4.0; // Сделали 4 секунды вместо 10, чтобы появлялось часто
   double _eggMiddleCooldown = 20.0;
   double _eggSuperCooldown = 30.0;
 
@@ -127,8 +127,9 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     obstacleSpeed = math.min(650, 250 + (_elapsed * 9));
     _distance += obstacleSpeed * dt;
 
-    final distanceScore = _distance ~/ 90;
-    final nextStars = distanceScore + _scoreModifier;
+    // ИЗМЕНЕНИЕ: Очки теперь зависят ИСКЛЮЧИТЕЛЬНО от пойманных бонусов (_scoreModifier).
+    // Больше пройденное расстояние не добавляет очки автоматически.
+    final nextStars = _scoreModifier;
     
     if (nextStars != stars.value) {
       stars.value = nextStars;
@@ -144,17 +145,17 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
       _spawnTimer = _nextSpawnDelay();
     }
 
-    // 2. Таймер Egg Junior: 2 штуки каждые 10 секунд (работает всегда)
+    // 2. Таймер Egg Junior: Появляется ЧАСТО (каждые 4 секунды по 2 штуки в любом режиме)
     _eggJuniorCooldown -= dt;
     if (_eggJuniorCooldown <= 0) {
       _spawnEggJunior(2);
-      _eggJuniorCooldown = 10.0;
+      _eggJuniorCooldown = 4.0; // Возвращаем кулдаун в 4 секунды
     }
 
     // 3. Таймер Egg Middle: 1 штука каждые 20-25 секунд (работает всегда)
     _eggMiddleCooldown -= dt;
     if (_eggMiddleCooldown <= 0) {
-      _spawnBonusEgg(eggMiddleSprite, 50);
+      _spawnBonusEgg(eggMiddleSprite, 45); // ИЗМЕНЕНИЕ: Теперь дает +45 очков
       _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0;
     }
 
@@ -162,7 +163,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     if (isAccelerated) {
       _eggSuperCooldown -= dt;
       if (_eggSuperCooldown <= 0) {
-        _spawnBonusEgg(eggSuperSprite, 150);
+        _spawnBonusEgg(eggSuperSprite, 85); // ИЗМЕНЕНИЕ: Теперь дает +85 очков
         _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0;
       }
     }
@@ -172,7 +173,9 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     if (!_runIsActive) return;
 
     _scoreModifier += value;
-    stars.value = (_distance ~/ 90) + _scoreModifier;
+    
+    // ИЗМЕНЕНИЕ: Обновляем счет только на основе модификатора от ловли предметов
+    stars.value = _scoreModifier;
 
     if (stars.value < 0) {
       endRun();
@@ -204,7 +207,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
         scoreValue = -20;
       } else {
         selectedSprite = obstacle3Sprite;
-        scoreValue = -35; // Самое опасное препятствие
+        scoreValue = -35;
       }
     } else {
       // ДО УСКОРЕНИЯ: Только частые obstacles_1 и obstacles_2
@@ -243,7 +246,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
         lane: lane,
         position: position,
         size: obstacleSize,
-        scoreChange: 15,
+        scoreChange: 20, // ИЗМЕНЕНИЕ: Теперь дает +20 очков
       ));
     }
   }
@@ -288,7 +291,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     _runIsActive = true;
 
     // Сброс кулдаунов бонусов
-    _eggJuniorCooldown = 10.0;
+    _eggJuniorCooldown = 4.0; // Сброс на 4 секунды при перезапуске
     _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0;
     _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0;
 
@@ -312,7 +315,6 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     overlays.add(GameOverOverlay.overlayId);
   }
 
-  // --- Исправленные методы, которые отсутствовали ---
   void _createPlayer() {
     final startLane = lanes.laneCount ~/ 2;
     player = PlayerCar(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:space_chicken/ui/settings_page.dart';
 
-import '../audio/game_audio_controller.dart';
 import '../game.dart';
 
 class GameHud extends StatelessWidget {
@@ -12,31 +12,88 @@ class GameHud extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: <Widget>[
-        Positioned(
-          top: MediaQuery.paddingOf(context).top + 14,
-          left: 18,
-          right: 18,
-          child: _ScoreBar(game: game),
-        ),
-        Positioned(
-          left: 22,
-          bottom: MediaQuery.paddingOf(context).bottom + 22,
-          child: _LaneButton(
-            imagePath: 'assets/images/Left.png',
-            onPressed: game.moveLeft,
+    return SafeArea(
+      child: Stack(
+        children: <Widget>[
+          Positioned(left: 18, top: 14, child: _ScoreBar(game: game)),
+          Positioned(
+            right: 18,
+            top: 14,
+            child: Row(
+              children: [
+                _IconButton(
+                  imagePath: 'assets/images/Pause.png',
+                  onPressed: () {
+                    game.pauseEngine();
+                  },
+                ),
+                const SizedBox(width: 10),
+                _IconButton(
+                  imagePath: 'assets/images/Menu.png',
+                  onPressed: () async {
+                    game.pauseEngine();
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    );
+                    game.resumeEngine();
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        Positioned(
-          right: 22,
-          bottom: MediaQuery.paddingOf(context).bottom + 22,
-          child: _LaneButton(
-            imagePath: 'assets/images/Right.png',
-            onPressed: game.moveRight,
+
+          Positioned(
+            left: 22,
+            bottom: MediaQuery.paddingOf(context).bottom + 22,
+            child: _LaneButton(
+              imagePath: 'assets/images/Left.png',
+              onPressed: game.moveLeft,
+            ),
           ),
+          Positioned(
+            right: 22,
+            bottom: MediaQuery.paddingOf(context).bottom + 22,
+            child: _LaneButton(
+              imagePath: 'assets/images/Right.png',
+              onPressed: game.moveRight,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Универсальный виджет для кнопок Pause/Menu
+class _IconButton extends StatelessWidget {
+  const _IconButton({required this.imagePath, required this.onPressed});
+
+  final String imagePath;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isPauseButton = imagePath.contains('Pause');
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(
+              isPauseButton ? Icons.pause_rounded : Icons.menu_rounded,
+              size: 34,
+              color: const Color(0xFFEAFBFF),
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }
@@ -49,108 +106,101 @@ class _ScoreBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment
+          .start, // Выравнивание по левому краю для плашки с очками
       children: <Widget>[
-        _HudPill(
-          label: 'STARS',
-          listenable: game.stars,
-          icon: Icons.star_rounded,
-        ),
-        _ExitButton(onPressed: game.onExitToMenu),
-        _HudPill(
-          label: 'BEST',
-          listenable: game.bestStars,
-          icon: Icons.bolt_rounded,
-        ),
+        // Кастомный счетчик STARS с яйцом и плашкой
+        _EggScorePill(listenable: game.stars),
       ],
     );
   }
 }
 
-class _ExitButton extends StatelessWidget {
-  const _ExitButton({required this.onPressed});
+// Новый виджет для отображения очков в виде яйца, плашки и текста
+class _EggScorePill extends StatelessWidget {
+  const _EggScorePill({required this.listenable});
 
-  final Future<void> Function() onPressed;
-
-  Future<void> _handlePressed() async {
-    await GameAudioController.instance.playButtonSound();
-    await onPressed();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 46,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xDD081025),
-          border: Border.all(color: const Color(0xAAFFF176), width: 1.3),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: const <BoxShadow>[
-            BoxShadow(color: Color(0x66FFF176), blurRadius: 18),
-          ],
-        ),
-        child: IconButton(
-          tooltip: 'На главную',
-          onPressed: _handlePressed,
-          icon: const Icon(
-            Icons.home_rounded,
-            size: 24,
-            color: Color(0xFFFFF176),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HudPill extends StatelessWidget {
-  const _HudPill({
-    required this.label,
-    required this.listenable,
-    required this.icon,
-  });
-
-  final String label;
   final ValueNotifier<int> listenable;
-  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
+    // Размеры подбираются под дизайн вашей игры
+    const double plateWidth = 150.0;
+    const double plateHeight = 54.0;
+    const double eggSize = 100.0;
+
     return AnimatedBuilder(
       animation: listenable,
       builder: (context, _) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: const Color(0xCC081025),
-            border: Border.all(color: const Color(0xAA00E5FF), width: 1.4),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: const <BoxShadow>[
-              BoxShadow(
-                color: Color(0x6600E5FF),
-                blurRadius: 18,
-                spreadRadius: 1,
+        return SizedBox(
+          // Общая ширина: плашка + выступающая слева часть яйца
+          width: plateWidth + (eggSize * 0.2),
+          height: eggSize,
+          child: Stack(
+            clipBehavior:
+                Clip.none, // Позволяет элементам выходить за рамки контейнера
+            children: <Widget>[
+              // 1. СЛОЙ СЗАДИ: Картинка яйца (general_shot.png)
+              // Размещаем её у самого левого края. Она займет свои 20% пространства слева
+              Positioned(
+                bottom: 45,
+                left: 0,
+                top: 0,
+                child: Image.asset(
+                  'assets/images/general_shot.png',
+                  width: eggSize,
+                  height: eggSize,
+                  fit: BoxFit.contain,
+                ),
               ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(icon, color: const Color(0xFFFFF176), size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  '$label ${listenable.value}',
-                  style: const TextStyle(
-                    color: Color(0xFFEAFBFF),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0,
+
+              // 2. СЛОЙ СВЕРХУ: Плашка под цифры (gold_egg_for_number.png)
+              // Объявляем её ПРАВЕЕ и НИЖЕ в Stack, чтобы она перекрыла яйцо сверху
+              Positioned(
+                right: 80,
+                // top:
+                //     (eggSize - plateHeight) /
+                //     2, // Центрируем плашку по вертикали относительно яйца
+                child: SizedBox(
+                  width: plateWidth,
+                  height: plateHeight,
+                  child: Stack(
+                    children: [
+                      // Фоновая картинка самой плашки (занимает всю выделенную ей ширину)
+                      Positioned.fill(
+                        child: Image.asset(
+                          'assets/images/gold_egg_for_number.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+
+                      // 3. Текст по центру плашки со смещением на 32% слева
+                      Positioned(
+                        left: plateWidth * 0.65,
+                        right: 0,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${listenable.value}',
+                            style: const TextStyle(
+                              color: Color(
+                                0xFFEAFBFF,
+                              ), // Бело-голубой неоновый цвет текста
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -159,10 +209,7 @@ class _HudPill extends StatelessWidget {
 }
 
 class _LaneButton extends StatefulWidget {
-  const _LaneButton({
-    required this.imagePath, 
-    required this.onPressed,
-  });
+  const _LaneButton({required this.imagePath, required this.onPressed});
 
   final String imagePath;
   final VoidCallback onPressed;
@@ -179,7 +226,7 @@ class _LaneButtonState extends State<_LaneButton> {
     return GestureDetector(
       onTapDown: (_) {
         setState(() {
-          _scale = 1.15; 
+          _scale = 1.15;
         });
       },
       onTapUp: (_) {
@@ -193,11 +240,11 @@ class _LaneButtonState extends State<_LaneButton> {
           _scale = 1.0;
         });
       },
-      behavior: HitTestBehavior.opaque, 
+      behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _scale,
         duration: const Duration(milliseconds: 80),
-        curve: Curves.easeOutCubic, 
+        curve: Curves.easeOutCubic,
         child: SizedBox(
           width: 74,
           height: 74,
@@ -206,8 +253,8 @@ class _LaneButtonState extends State<_LaneButton> {
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) {
               return Icon(
-                widget.imagePath.contains('Left') 
-                    ? Icons.arrow_back_ios_new_rounded 
+                widget.imagePath.contains('Left')
+                    ? Icons.arrow_back_ios_new_rounded
                     : Icons.arrow_forward_ios_rounded,
                 size: 44,
                 color: const Color(0xFFFF2BD6),
