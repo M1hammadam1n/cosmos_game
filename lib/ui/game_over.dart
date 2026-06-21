@@ -13,62 +13,39 @@ class GameOverOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xAA050713),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xF00A1026),
-                border: Border.all(color: const Color(0xFF00E5FF), width: 1.5),
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: const <BoxShadow>[
-                  BoxShadow(color: Color(0xAA00E5FF), blurRadius: 28),
-                  BoxShadow(
-                    color: Color.fromARGB(102, 135, 43, 255),
-                    blurRadius: 40,
+      color: const Color(0xFF3A0B0B),
+      child: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Image.asset(
+                    'assets/images/game_over.png',
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
+                  _ScoreBox(
+                    score: game.stars.value,
+                    best: game.bestStars.value,
+                  ),
+                  const SizedBox(height: 14),
+                  _ImageButton(
+                    imagePath: 'assets/images/start_again.png',
+                    label: 'Start again',
+                    onPressed: game.restart,
+                  ),
+                  const SizedBox(height: 10),
+                  _ImageButton(
+                    imagePath: 'assets/images/back_to_menu.png',
+                    label: 'Back to menu',
+                    onPressed: game.onExitToMenu,
                   ),
                 ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Text(
-                      'GAME OVER',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Color(0xFFFF2BD6),
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    _ScoreLine(label: 'Current score', value: game.stars.value),
-                    const SizedBox(height: 8),
-                    _ScoreLine(
-                      label: 'Best score',
-                      value: game.bestStars.value,
-                    ),
-                    const SizedBox(height: 26),
-                    _GameOverButton(
-                      icon: Icons.restart_alt_rounded,
-                      label: 'Restart',
-                      filled: true,
-                      onPressed: game.restart,
-                    ),
-                    const SizedBox(height: 12),
-                    _GameOverButton(
-                      icon: Icons.home_rounded,
-                      label: 'На главную',
-                      onPressed: game.onExitToMenu,
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -78,101 +55,140 @@ class GameOverOverlay extends StatelessWidget {
   }
 }
 
-class _GameOverButton extends StatelessWidget {
-  const _GameOverButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.filled = false,
-  });
+class _ScoreBox extends StatelessWidget {
+  const _ScoreBox({required this.score, required this.best});
 
-  final IconData icon;
-  final String label;
-  final Future<void> Function() onPressed;
-  final bool filled;
-
-  Future<void> _handlePressed() async {
-    await GameAudioController.instance.playButtonSound();
-    await onPressed();
-  }
+  final int score;
+  final int best;
 
   @override
   Widget build(BuildContext context) {
-    final shape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8),
-    );
-    final textStyle = const TextStyle(
-      fontSize: 17,
-      fontWeight: FontWeight.w900,
-      letterSpacing: 0,
-    );
-
-    if (filled) {
-      return SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: FilledButton.icon(
-          onPressed: _handlePressed,
-          icon: Icon(icon),
-          label: Text(label),
-          style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFF00E5FF),
-            foregroundColor: const Color(0xFF04111F),
-            shape: shape,
-            textStyle: textStyle,
+    return AspectRatio(
+      aspectRatio: 498 / 396,
+      child: Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/game_over_box.png',
+              fit: BoxFit.contain,
+            ),
           ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: OutlinedButton.icon(
-        onPressed: _handlePressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFEAFBFF),
-          side: const BorderSide(color: Color(0xFFFF2BD6), width: 1.3),
-          shape: shape,
-          textStyle: textStyle,
-        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(54, 64, 54, 58),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _ScoreValue(label: 'score', value: score),
+                const SizedBox(height: 22),
+                _ScoreValue(label: 'best', value: best),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _ScoreLine extends StatelessWidget {
-  const _ScoreLine({required this.label, required this.value});
+class _ScoreValue extends StatelessWidget {
+  const _ScoreValue({required this.label, required this.value});
 
   final String label;
   final int value;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFBDEFFF),
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFFFFE6D6),
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
           ),
         ),
-        Text(
-          '$value',
-          style: const TextStyle(
-            color: Color(0xFFFFF176),
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0,
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            '$value',
+            style: const TextStyle(
+              color: Color(0xFFFFFFFF),
+              fontSize: 40,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+              height: 1,
+            ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ImageButton extends StatefulWidget {
+  const _ImageButton({
+    required this.imagePath,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String imagePath;
+  final String label;
+  final Future<void> Function() onPressed;
+
+  @override
+  State<_ImageButton> createState() => _ImageButtonState();
+}
+
+class _ImageButtonState extends State<_ImageButton> {
+  double _scale = 1.0;
+
+  Future<void> _handlePressed() async {
+    await GameAudioController.instance.playButtonSound();
+    await widget.onPressed();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: widget.label,
+      child: GestureDetector(
+        onTapDown: (_) {
+          setState(() {
+            _scale = 0.96;
+          });
+        },
+        onTapUp: (_) {
+          setState(() {
+            _scale = 1.0;
+          });
+          _handlePressed();
+        },
+        onTapCancel: () {
+          setState(() {
+            _scale = 1.0;
+          });
+        },
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedScale(
+          scale: _scale,
+          duration: const Duration(milliseconds: 80),
+          curve: Curves.easeOutCubic,
+          child: AspectRatio(
+            aspectRatio: 378 / 150,
+            child: Image.asset(widget.imagePath, fit: BoxFit.contain),
+          ),
+        ),
+      ),
     );
   }
 }

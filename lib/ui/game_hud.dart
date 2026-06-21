@@ -31,7 +31,7 @@ class GameHud extends StatelessWidget {
                 _IconButton(
                   imagePath: 'assets/images/Menu.png',
                   onPressed: () async {
-                    game.pauseEngine();
+                    game.pauseEngine(); 
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const SettingsScreen(),
