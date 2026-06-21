@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:space_chicken/ui/settings_page.dart';
 
 import '../game.dart';
@@ -184,10 +185,8 @@ class _EggScorePill extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             '${listenable.value}',
-                            style: const TextStyle(
-                              color: Color(
-                                0xFFEAFBFF,
-                              ), // Бело-голубой неоновый цвет текста
+                            style: GoogleFonts.moul(
+                              color: const Color(0xFFEAFBFF),
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
                             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../audio/game_audio_controller.dart';
 import '../game.dart';
@@ -130,7 +131,7 @@ class _WinnerScoreValue extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-            style: const TextStyle(
+            style: GoogleFonts.moul(
               color: Colors.white,
               fontSize: 40,
               fontWeight: FontWeight.w900,
@@ -143,7 +144,7 @@ class _WinnerScoreValue extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             '$value',
-            style: const TextStyle(
+            style: GoogleFonts.moul(
               color: Colors.white,
               fontSize: 26,
               fontWeight: FontWeight.w900,

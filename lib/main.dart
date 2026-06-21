@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'game.dart';
@@ -26,16 +27,24 @@ class CyberRunnerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final baseTheme = ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF00E5FF),
+        brightness: Brightness.dark,
+      ),
+      useMaterial3: true,
+    );
+
     return ImmersiveSystemUiScope(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Space Chicken',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF00E5FF),
-            brightness: Brightness.dark,
+        theme: baseTheme.copyWith(
+          textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
+          primaryTextTheme: GoogleFonts.moulTextTheme(baseTheme.primaryTextTheme),
+          snackBarTheme: SnackBarThemeData(
+            contentTextStyle: GoogleFonts.moul(color: Colors.white),
           ),
-          useMaterial3: true,
         ),
         home: const _GameShell(),
       ),

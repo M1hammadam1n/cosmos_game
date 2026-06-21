@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:space_chicken/ui/settings_page.dart';
 import '../audio/game_audio_controller.dart';
 
@@ -138,8 +139,8 @@ class _SettingsSwitchState extends State<_SettingsSwitch> {
       secondary: Icon(widget.icon, color: const Color(0xFF00E5FF)),
       title: Text(
         widget.title,
-        style: const TextStyle(
-          color: Color(0xFFEAFBFF),
+        style: GoogleFonts.moul(
+          color: const Color(0xFFEAFBFF),
           fontSize: 16,
           fontWeight: FontWeight.w800,
         ),
