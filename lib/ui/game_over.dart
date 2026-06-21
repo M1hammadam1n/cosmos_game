@@ -13,7 +13,7 @@ class GameOverOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF3A0B0B),
+      color: const Color(0xFF3A0B0B).withOpacity(0.8),
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -63,29 +63,43 @@ class _ScoreBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 498 / 396,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/game_over_box.png',
-              fit: BoxFit.contain,
+    // Wrap in a SizedBox to force a smaller physical size
+    return SizedBox(
+      width: 250, // Set your desired smaller width here
+      child: AspectRatio(
+        aspectRatio: 498 / 396,
+        child: Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/game_over_box.png',
+                fit: BoxFit.contain,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(54, 64, 54, 58),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                _ScoreValue(label: 'score', value: score),
-                const SizedBox(height: 22),
-                _ScoreValue(label: 'best', value: best),
-              ],
+            Padding(
+              // Keep padding relative to the new smaller size
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  // Scale down the contents if they are still too big
+                  Transform.scale(
+                    scale: 0.8, // Scales the text widgets down to 80% size
+                    child: Column(
+                      children: [
+                        _ScoreValue(label: 'score', value: score),
+                        const SizedBox(height: 10),
+                        _ScoreValue(label: 'best', value: best),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -107,8 +121,8 @@ class _ScoreValue extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFFFE6D6),
-              fontSize: 26,
+              color: Colors.white,
+              fontSize: 40,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
             ),
@@ -120,8 +134,8 @@ class _ScoreValue extends StatelessWidget {
           child: Text(
             '$value',
             style: const TextStyle(
-              color: Color(0xFFFFFFFF),
-              fontSize: 40,
+              color: Colors.white,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
               height: 1,
@@ -184,7 +198,7 @@ class _ImageButtonState extends State<_ImageButton> {
           duration: const Duration(milliseconds: 80),
           curve: Curves.easeOutCubic,
           child: AspectRatio(
-            aspectRatio: 378 / 150,
+            aspectRatio: 278 / 50,
             child: Image.asset(widget.imagePath, fit: BoxFit.contain),
           ),
         ),

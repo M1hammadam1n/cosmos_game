@@ -4,22 +4,21 @@ import 'package:flame/components.dart';
 import 'game.dart'; // Путь к вашему файлу CyberRunnerGame
 import 'player_car.dart'; // Путь к вашему файлу PlayerCar
 
-class Obstacle extends SpriteComponent 
+class Obstacle extends SpriteComponent
     with CollisionCallbacks, HasGameReference<CyberRunnerGame> {
-  
   // Номер дорожки, на которой находится объект
   final int lane;
-  
-  // Количество очков. Если положительное (20, 45, 85) — это яйцо-бонус. 
+
+  // Количество очков. Если положительное (20, 45, 85) — это яйцо-бонус.
   // Если отрицательное (-10, -15, -20, -35) — это препятствие.
-  final int scoreChange; 
+  final int scoreChange;
 
   Obstacle({
     required Sprite sprite,
     required this.lane,
     required Vector2 position,
     required Vector2 size,
-    required this.scoreChange, 
+    required this.scoreChange,
   }) : super(
          sprite: sprite,
          position: position,
@@ -28,7 +27,7 @@ class Obstacle extends SpriteComponent
        );
 
   // Переопределяем геттер priority. Flame запрашивает его напрямую при отрисовке.
-  // Теперь препятствия (scoreChange <= 0) ВСЕГДА имеют приоритет 20, 
+  // Теперь препятствия (scoreChange <= 0) ВСЕГДА имеют приоритет 20,
   // а яйца (scoreChange > 0) имеют приоритет 10. Препятствия будут строго ПОВЕРХ яиц.
   @override
   int get priority => scoreChange > 0 ? 25 : 20;
@@ -36,22 +35,25 @@ class Obstacle extends SpriteComponent
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    
-    // Добавляем хитбокс (зону столкновения). 
-    // Делаем его чуть меньше физического размера картинки (85%), 
+
+    // Добавляем хитбокс (зону столкновения).
+    // Делаем его чуть меньше физического размера картинки (85%),
     // чтобы игроку было комфортнее уворачиваться, и не было "ложных" аварий по краям текстуры.
-    add(RectangleHitbox(
-      size: size * 0.85,
-      anchor: Anchor.center,
-      position: size / 2,
-      collisionType: CollisionType.passive, // Пассивный тип, так как объект просто движется по рельсам
-    ));
+    add(
+      RectangleHitbox(
+        size: size * 0.85,
+        anchor: Anchor.center,
+        position: size / 2,
+        collisionType: CollisionType
+            .passive, // Пассивный тип, так как объект просто движется по рельсам
+      ),
+    );
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    
+
     // Двигаем объект вниз по экрану со скоростью, которая растет со временем в игре
     position.y += game.obstacleSpeed * dt;
 
@@ -82,7 +84,7 @@ class Obstacle extends SpriteComponent
       // Если врезались в препятствие -> передастся минус и игра может закончиться (Game Over).
       // Если поймали яйцо -> передастся плюс и очки увеличатся.
       game.modifyScore(scoreChange);
-      
+
       // Сразу убираем объект с экрана, чтобы столкновение не засчиталось повторно в следующем кадре
       removeFromParent();
     }

@@ -22,7 +22,7 @@ class PlayerCar extends SpriteComponent
 
   int lane;
   double _targetX = 0;
-  
+
   // 1. Keep a reference to the hitbox
   late final RectangleHitbox _hitbox;
 
@@ -34,14 +34,14 @@ class PlayerCar extends SpriteComponent
   Future<void> onLoad() async {
     await super.onLoad();
     _targetX = position.x;
-    
+
     // 3. Assign the hitbox to the variable so we can resize it later
     _hitbox = RectangleHitbox.relative(
       Vector2(_hitboxWidthRatio, _hitboxHeightRatio),
       parentSize: size,
       anchor: Anchor.center,
     )..collisionType = CollisionType.active;
-    
+
     add(_hitbox);
   }
 
@@ -60,7 +60,7 @@ class PlayerCar extends SpriteComponent
   void applyLayout() {
     // 4. Update the visual size of the component
     size = game.playerSize;
-    
+
     // 5. Explicitly update the hitbox size to match the new component size
     if (isLoaded) {
       _hitbox.size = Vector2(

@@ -21,13 +21,16 @@ class GameHud extends StatelessWidget {
             top: 14,
             child: Row(
               children: [
-                _IconButton(
-                  imagePath: 'assets/images/Pause.png',
-                  onPressed: () {
-                    game.pauseEngine();
-                  },
-                ),
-                const SizedBox(width: 10),
+
+
+                
+                // _IconButton(
+                //   imagePath: 'assets/images/Pause.png',
+                //   onPressed: () {
+                //     game.pauseEngine();
+                //   },
+                // ),
+                // const SizedBox(width: 10),
                 _IconButton(
                   imagePath: 'assets/images/Menu.png',
                   onPressed: () async {
