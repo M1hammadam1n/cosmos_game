@@ -45,16 +45,16 @@ class GameHud extends StatelessWidget {
           ),
 
           Positioned(
-            left: 22,
-            bottom: MediaQuery.paddingOf(context).bottom + 22,
+            left: 30,
+            bottom: MediaQuery.paddingOf(context).bottom - 35,
             child: _LaneButton(
               imagePath: 'assets/images/Left.png',
               onPressed: game.moveLeft,
             ),
           ),
           Positioned(
-            right: 22,
-            bottom: MediaQuery.paddingOf(context).bottom + 22,
+            right: 30,
+            bottom: MediaQuery.paddingOf(context).bottom - 35,
             child: _LaneButton(
               imagePath: 'assets/images/Right.png',
               onPressed: game.moveRight,
@@ -243,11 +243,11 @@ class _LaneButtonState extends State<_LaneButton> {
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
         scale: _scale,
-        duration: const Duration(milliseconds: 80),
+        duration: const Duration(milliseconds: 70),
         curve: Curves.easeOutCubic,
         child: SizedBox(
-          width: 74,
-          height: 74,
+          width: 100,
+          height: 100,
           child: Image.asset(
             widget.imagePath,
             fit: BoxFit.contain,

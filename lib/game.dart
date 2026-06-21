@@ -28,7 +28,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   final Future<void> Function() onExitToMenu;
 
   late final Sprite playerSprite;
-  
+
   // Бонусы (Яйца)
   late final Sprite eggJuniorSprite;
   late final Sprite eggMiddleSprite;
@@ -50,12 +50,13 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   double _spawnTimer = 0;
   double _elapsed = 0;
   bool _runIsActive = true;
-  
+
   int _scoreModifier = 0;
   double obstacleSpeed = 250;
 
   // --- Независимые таймеры для бонусов (Яиц) ---
-  double _eggJuniorCooldown = 4.0; // Сделали 4 секунды вместо 10, чтобы появлялось часто
+  double _eggJuniorCooldown =
+      4.0; // Сделали 4 секунды вместо 10, чтобы появлялось часто
   double _eggMiddleCooldown = 20.0;
   double _eggSuperCooldown = 30.0;
 
@@ -77,7 +78,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     bestStars.value = _preferences?.getInt(_bestScoreKey) ?? 0;
 
     playerSprite = await loadSprite('object_for_line.png');
-    
+
     // Загрузка бонусов
     eggJuniorSprite = await loadSprite('egg_junior.png');
     eggMiddleSprite = await loadSprite('egg_middle.png');
@@ -93,7 +94,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     add(road);
 
     _createPlayer();
-    
+
     // Первичная инициализация случайных интервалов
     _eggMiddleCooldown = 20.0 + _random.nextDouble() * 5.0; // 20-25 секунд
     _eggSuperCooldown = 30.0 + _random.nextDouble() * 10.0; // 30-40 секунд
@@ -130,7 +131,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     // ИЗМЕНЕНИЕ: Очки теперь зависят ИСКЛЮЧИТЕЛЬНО от пойманных бонусов (_scoreModifier).
     // Больше пройденное расстояние не добавляет очки автоматически.
     final nextStars = _scoreModifier;
-    
+
     if (nextStars != stars.value) {
       stars.value = nextStars;
     }
@@ -173,7 +174,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     if (!_runIsActive) return;
 
     _scoreModifier += value;
-    
+
     // ИЗМЕНЕНИЕ: Обновляем счет только на основе модификатора от ловли предметов
     stars.value = _scoreModifier;
 
@@ -221,13 +222,15 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
       }
     }
 
-    add(Obstacle(
-      sprite: selectedSprite,
-      lane: lane,
-      position: position,
-      size: obstacleSize,
-      scoreChange: scoreValue,
-    ));
+    add(
+      Obstacle(
+        sprite: selectedSprite,
+        lane: lane,
+        position: position,
+        size: obstacleSize,
+        scoreChange: scoreValue,
+      ),
+    );
   }
 
   // Спавн сразу 2 штук Egg Junior в разные случайные полосы
@@ -241,13 +244,15 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
         lanes.laneCenterX(lane),
         lanes.roadRect.top - obstacleSize.y,
       );
-      add(Obstacle(
-        sprite: eggJuniorSprite,
-        lane: lane,
-        position: position,
-        size: obstacleSize,
-        scoreChange: 20, // ИЗМЕНЕНИЕ: Теперь дает +20 очков
-      ));
+      add(
+        Obstacle(
+          sprite: eggJuniorSprite,
+          lane: lane,
+          position: position,
+          size: obstacleSize,
+          scoreChange: 20, // ИЗМЕНЕНИЕ: Теперь дает +20 очков
+        ),
+      );
     }
   }
 
@@ -258,13 +263,15 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
       lanes.laneCenterX(lane),
       lanes.roadRect.top - obstacleSize.y,
     );
-    add(Obstacle(
-      sprite: sprite,
-      lane: lane,
-      position: position,
-      size: obstacleSize,
-      scoreChange: scoreChange,
-    ));
+    add(
+      Obstacle(
+        sprite: sprite,
+        lane: lane,
+        position: position,
+        size: obstacleSize,
+        scoreChange: scoreChange,
+      ),
+    );
   }
 
   void moveLeft() {
@@ -368,10 +375,7 @@ class RoadComponent extends Component with HasGameReference<CyberRunnerGame> {
     final rect = game.lanes.roadRect;
 
     _drawBackgroundParticles(canvas);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(rect, const Radius.circular(14)),
-      _roadPaint,
-    );
+    canvas.drawRect(rect, _roadPaint);
 
     _drawRoadEdges(canvas, rect);
     _drawLaneLines(canvas, rect);

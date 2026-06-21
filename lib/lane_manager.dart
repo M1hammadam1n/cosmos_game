@@ -15,17 +15,9 @@ class LaneManager {
   void resize(Vector2 gameSize) {
     // The road fills the screen vertically; the player still stays above
     // the touch controls so the bottom of the game area is not black.
-    final horizontalInset = math.max(18.0, gameSize.x * 0.08);
-    final topInset = math.max(64.0, gameSize.y * 0.08);
     final controlInset = math.max(108.0, gameSize.y * 0.14);
-    final roadWidth = gameSize.x - (horizontalInset * 2);
 
-    roadRect = Rect.fromLTWH(
-      horizontalInset,
-      topInset,
-      roadWidth,
-      math.max(1, gameSize.y - topInset),
-    );
+    roadRect = Rect.fromLTWH(0, 0, gameSize.x, math.max(1, gameSize.y));
     laneWidth = roadRect.width / laneCount;
     _playerStartY = gameSize.y - controlInset - laneWidth * 1.05;
   }
