@@ -3,17 +3,25 @@ import 'package:flutter/material.dart';
 import '../audio/game_audio_controller.dart';
 import '../game.dart';
 
-class GameOverOverlay extends StatelessWidget {
-  const GameOverOverlay({required this.game, super.key});
+class WinnerOverlay extends StatelessWidget {
+  const WinnerOverlay({required this.game, super.key});
 
-  static const String overlayId = 'game_over';
+  static const String overlayId = 'winner';
 
   final CyberRunnerGame game;
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFF3A0B0B).withOpacity(0.8),
+    // Вычисляем адаптивный отступ (5% от высоты экрана)
+    final double topPadding = MediaQuery.of(context).size.height * 0.25;
+
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/winner_banner.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -23,24 +31,29 @@ class GameOverOverlay extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Image.asset(
-                    'assets/images/game_over.png',
-                    width: double.infinity,
-                    fit: BoxFit.contain,
+                  // Адаптивный отступ сверху
+                  SizedBox(height: topPadding),
+
+                  Center(
+                    child: Image.asset(
+                      'assets/images/winner.png',
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                   const SizedBox(height: 10),
-                  _ScoreBox(
+                  _WinnerScoreBox(
                     score: game.stars.value,
                     best: game.bestStars.value,
                   ),
                   const SizedBox(height: 14),
-                  _ImageButton(
+                  _WinnerImageButton(
                     imagePath: 'assets/images/start_again.png',
                     label: 'Start again',
                     onPressed: game.restart,
                   ),
                   const SizedBox(height: 10),
-                  _ImageButton(
+                  _WinnerImageButton(
                     imagePath: 'assets/images/back_to_menu.png',
                     label: 'Back to menu',
                     onPressed: game.onExitToMenu,
@@ -55,8 +68,8 @@ class GameOverOverlay extends StatelessWidget {
   }
 }
 
-class _ScoreBox extends StatelessWidget {
-  const _ScoreBox({required this.score, required this.best});
+class _WinnerScoreBox extends StatelessWidget {
+  const _WinnerScoreBox({required this.score, required this.best});
 
   final int score;
   final int best;
@@ -86,9 +99,9 @@ class _ScoreBox extends StatelessWidget {
                     scale: 0.8,
                     child: Column(
                       children: [
-                        _ScoreValue(label: 'score', value: score),
+                        _WinnerScoreValue(label: 'score', value: score),
                         const SizedBox(height: 10),
-                        _ScoreValue(label: 'best', value: best),
+                        _WinnerScoreValue(label: 'best', value: best),
                       ],
                     ),
                   ),
@@ -102,8 +115,8 @@ class _ScoreBox extends StatelessWidget {
   }
 }
 
-class _ScoreValue extends StatelessWidget {
-  const _ScoreValue({required this.label, required this.value});
+class _WinnerScoreValue extends StatelessWidget {
+  const _WinnerScoreValue({required this.label, required this.value});
 
   final String label;
   final int value;
@@ -144,8 +157,8 @@ class _ScoreValue extends StatelessWidget {
   }
 }
 
-class _ImageButton extends StatefulWidget {
-  const _ImageButton({
+class _WinnerImageButton extends StatefulWidget {
+  const _WinnerImageButton({
     required this.imagePath,
     required this.label,
     required this.onPressed,
@@ -156,10 +169,10 @@ class _ImageButton extends StatefulWidget {
   final Future<void> Function() onPressed;
 
   @override
-  State<_ImageButton> createState() => _ImageButtonState();
+  State<_WinnerImageButton> createState() => _WinnerImageButtonState();
 }
 
-class _ImageButtonState extends State<_ImageButton> {
+class _WinnerImageButtonState extends State<_WinnerImageButton> {
   double _scale = 1.0;
 
   Future<void> _handlePressed() async {

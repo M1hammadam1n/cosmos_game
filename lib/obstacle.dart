@@ -13,12 +13,16 @@ class Obstacle extends SpriteComponent
   // Если отрицательное (-10, -15, -20, -35) — это препятствие.
   final int scoreChange;
 
+  // Если true — столкновение сразу завершает игру (obstacles_1, obstacles_3).
+  final bool endsRunOnCollision;
+
   Obstacle({
     required Sprite sprite,
     required this.lane,
     required Vector2 position,
     required Vector2 size,
     required this.scoreChange,
+    this.endsRunOnCollision = false,
   }) : super(
          sprite: sprite,
          position: position,
@@ -84,6 +88,10 @@ class Obstacle extends SpriteComponent
       // Если врезались в препятствие -> передастся минус и игра может закончиться (Game Over).
       // Если поймали яйцо -> передастся плюс и очки увеличатся.
       game.modifyScore(scoreChange);
+
+      if (endsRunOnCollision) {
+        game.endRun();
+      }
 
       // Сразу убираем объект с экрана, чтобы столкновение не засчиталось повторно в следующем кадре
       removeFromParent();

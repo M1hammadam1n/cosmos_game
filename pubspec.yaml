@@ -29,6 +29,8 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/winner.png
+    - assets/images/winner_banner.png
     - assets/icons/
     - assets/music/button_sound_effect.mp3
     - assets/music/music_for_game.m4a

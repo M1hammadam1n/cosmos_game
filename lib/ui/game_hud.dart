@@ -21,20 +21,17 @@ class GameHud extends StatelessWidget {
             top: 14,
             child: Row(
               children: [
-
-
-                
-                // _IconButton(
-                //   imagePath: 'assets/images/Pause.png',
-                //   onPressed: () {
-                //     game.pauseEngine();
-                //   },
-                // ),
-                // const SizedBox(width: 10),
                 _IconButton(
-                  imagePath: 'assets/images/Menu.png',
+                  imagePath: 'assets/images/Home.png',
+                  onPressed: () {
+                    game.onExitToMenu();
+                  },
+                ),
+                const SizedBox(width: 10),
+                _IconButton(
+                  imagePath: 'assets/images/Setting_button.png',
                   onPressed: () async {
-                    game.pauseEngine(); 
+                    game.pauseEngine();
                     await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => const SettingsScreen(),
@@ -49,7 +46,7 @@ class GameHud extends StatelessWidget {
 
           Positioned(
             left: 30,
-            bottom: MediaQuery.paddingOf(context).bottom - 35,
+            bottom: MediaQuery.paddingOf(context).bottom + 15,
             child: _LaneButton(
               imagePath: 'assets/images/Left.png',
               onPressed: game.moveLeft,
@@ -57,7 +54,7 @@ class GameHud extends StatelessWidget {
           ),
           Positioned(
             right: 30,
-            bottom: MediaQuery.paddingOf(context).bottom - 35,
+            bottom: MediaQuery.paddingOf(context).bottom + 15,
             child: _LaneButton(
               imagePath: 'assets/images/Right.png',
               onPressed: game.moveRight,
@@ -83,8 +80,8 @@ class _IconButton extends StatelessWidget {
     return GestureDetector(
       onTap: onPressed,
       child: SizedBox(
-        width: 48,
-        height: 48,
+        width: 60,
+        height: 60,
         child: Image.asset(
           imagePath,
           fit: BoxFit.contain,

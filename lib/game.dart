@@ -11,6 +11,7 @@ import 'lane_manager.dart';
 import 'obstacle.dart';
 import 'player_car.dart';
 import 'ui/game_over.dart';
+import 'ui/winner.dart';
 
 class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   CyberRunnerGame({required this.onExitToMenu})
@@ -229,6 +230,9 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
         position: position,
         size: obstacleSize,
         scoreChange: scoreValue,
+        endsRunOnCollision:
+            selectedSprite == obstacle1Sprite ||
+            selectedSprite == obstacle3Sprite,
       ),
     );
   }
@@ -250,7 +254,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
           lane: lane,
           position: position,
           size: obstacleSize,
-          scoreChange: 20, // ИЗМЕНЕНИЕ: Теперь дает +20 очков
+          scoreChange: 10000, 
         ),
       );
     }
@@ -284,6 +288,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
 
   Future<void> restart() async {
     overlays.remove(GameOverOverlay.overlayId);
+    overlays.remove(WinnerOverlay.overlayId);
     for (final obstacle in children.whereType<Obstacle>().toList()) {
       obstacle.removeFromParent();
     }
@@ -317,9 +322,10 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
     if (stars.value > bestStars.value) {
       bestStars.value = stars.value;
       await _preferences?.setInt(_bestScoreKey, bestStars.value);
+      overlays.add(WinnerOverlay.overlayId);
+    } else {
+      overlays.add(GameOverOverlay.overlayId);
     }
-
-    overlays.add(GameOverOverlay.overlayId);
   }
 
   void _createPlayer() {

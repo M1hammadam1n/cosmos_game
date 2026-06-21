@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'game.dart';
+import 'system_ui_config.dart';
 import 'ui/game_hud.dart';
 import 'ui/game_over.dart';
 import 'ui/start_menu.dart';
+import 'ui/winner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +16,7 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  await configureImmersiveSystemUi();
 
   runApp(const CyberRunnerApp());
 }
@@ -23,17 +26,19 @@ class CyberRunnerApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Space Chicken',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00E5FF),
-          brightness: Brightness.dark,
+    return ImmersiveSystemUiScope(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Space Chicken',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF00E5FF),
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        home: const _GameShell(),
       ),
-      home: const _GameShell(),
     );
   }
 }
@@ -85,6 +90,8 @@ class _GameShellState extends State<_GameShell> {
             GameHud.overlayId: (context, game) => GameHud(game: game),
             GameOverOverlay.overlayId: (context, game) =>
                 GameOverOverlay(game: game),
+            WinnerOverlay.overlayId: (context, game) =>
+                WinnerOverlay(game: game),
           },
         ),
       ),
