@@ -1,7 +1,8 @@
 import 'dart:async';
 
-import 'package:just_audio/just_audio.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GameAudioController {
@@ -123,6 +124,62 @@ class GameAudioController {
 
   Future<void> playTransitionSound() async {
     await _playEffect(_transitionPlayer);
+  }
+
+  Future<void> pauseMusic() async {
+    if (!_audioAvailable) {
+      return;
+    }
+
+    await _musicPlayer?.pause();
+  }
+
+  Future<void> resumeMusic() async {
+    if (!_audioAvailable || !musicEnabled) {
+      return;
+    }
+
+    final player = _musicPlayer;
+    if (player == null) {
+      return;
+    }
+
+    if (player.playing) {
+      return;
+    }
+
+    try {
+      if (_musicStarted) {
+        await player.play();
+        return;
+      }
+
+      await syncMusic();
+    } on MissingPluginException {
+      _audioAvailable = false;
+      _musicStarted = false;
+    } on PlatformException {
+      _audioAvailable = false;
+      _musicStarted = false;
+    }
+  }
+
+  Future<void> stopMusic() async {
+    await _musicPlayer?.stop();
+    _musicStarted = false;
+  }
+
+  void handleAppLifecycleChange(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        unawaited(resumeMusic());
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        unawaited(pauseMusic());
+      case AppLifecycleState.detached:
+        unawaited(stopMusic());
+    }
   }
 
   Future<void> dispose() async {

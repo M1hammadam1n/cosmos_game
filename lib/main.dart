@@ -44,7 +44,7 @@ class CyberRunnerApp extends StatelessWidget {
     return ImmersiveSystemUiScope(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Space Chicken',
+        title: 'Egg Escape',
         theme: baseTheme.copyWith(
           textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
           primaryTextTheme: GoogleFonts.moulTextTheme(
@@ -67,7 +67,7 @@ class _GameShell extends StatefulWidget {
   State<_GameShell> createState() => _GameShellState();
 }
 
-class _GameShellState extends State<_GameShell> {
+class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   CyberRunnerGame? _game;
   bool _showLoading = true;
   bool _offlineScreenDismissed = false;
@@ -75,16 +75,23 @@ class _GameShellState extends State<_GameShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ConnectivityService.instance.isOffline.addListener(_onConnectivityChanged);
     _finishLoadingScreen();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ConnectivityService.instance.isOffline.removeListener(
       _onConnectivityChanged,
     );
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    GameAudioController.instance.handleAppLifecycleChange(state);
   }
 
   void _onConnectivityChanged() {

@@ -60,9 +60,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final opened = await ExternalLinkLauncher.open(url);
 
     if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open link: $url')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open link: $url')));
     }
   }
 

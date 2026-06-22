@@ -44,7 +44,6 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
 
   final math.Random _random = math.Random();
 
-  double _distance = 0;
   double _spawnTimer = 0;
   double _elapsed = 0;
   bool _runIsActive = true;
@@ -122,7 +121,6 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
 
     _elapsed += dt;
     obstacleSpeed = math.min(650, 250 + (_elapsed * 9));
-    _distance += obstacleSpeed * dt;
 
     // ИЗМЕНЕНИЕ: Очки теперь зависят ИСКЛЮЧИТЕЛЬНО от пойманных бонусов (_scoreModifier).
     // Больше пройденное расстояние не добавляет очки автоматически.
@@ -288,7 +286,6 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
       obstacle.removeFromParent();
     }
 
-    _distance = 0;
     _elapsed = 0;
     _spawnTimer = 0.45;
     _scoreModifier = 0;
