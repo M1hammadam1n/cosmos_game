@@ -31,6 +31,9 @@ class _StartMenuState extends State<StartMenu> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final contentMaxWidth = math.min(480.0, screenWidth * 0.85);
+    final iconSize = math.max(56.0, contentMaxWidth * 0.22);
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -43,64 +46,72 @@ class _StartMenuState extends State<StartMenu> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Image.asset(
-                'assets/images/Logo_master.png',
-                width: double.infinity,
-                fit: BoxFit.fitWidth,
+              Flexible(
+                child: Image.asset(
+                  'assets/images/Logo_master.png',
+                  width: double.infinity,
+                  fit: BoxFit.contain,
+                ),
               ),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 320),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-                              await GameAudioController.instance
-                                  .playButtonSound();
-                              await widget.onStart();
-                            },
-                            child: Image.asset(
-                              'assets/images/Cutout 1.png',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              GestureDetector(
-                                onTap: _openSettings,
-                                child: Image.asset(
-                                  'assets/images/settings.png',
-                                  fit: BoxFit.contain,
-                                  width: 80,
-                                  height: 80,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              GestureDetector(
+              Flexible(
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Make only the large cutout scrollable if needed
+                            SingleChildScrollView(
+                              child: GestureDetector(
                                 onTap: () async {
                                   await GameAudioController.instance
                                       .playButtonSound();
-                                  await SystemNavigator.pop();
+                                  await widget.onStart();
                                 },
                                 child: Image.asset(
-                                  'assets/images/logout.png',
+                                  'assets/images/Cutout 1.png',
                                   fit: BoxFit.contain,
-                                  width: 80,
-                                  height: 80,
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                        ],
+                            ),
+                            // const SizedBox(height: 14),
+                            // Buttons must remain fixed (not inside scrollable area)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: _openSettings,
+                                  child: Image.asset(
+                                    'assets/images/settings.png',
+                                    fit: BoxFit.contain,
+                                    width: iconSize,
+                                    height: iconSize,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                GestureDetector(
+                                  onTap: () async {
+                                    await GameAudioController.instance
+                                        .playButtonSound();
+                                    await SystemNavigator.pop();
+                                  },
+                                  child: Image.asset(
+                                    'assets/images/logout.png',
+                                    fit: BoxFit.contain,
+                                    width: iconSize,
+                                    height: iconSize,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // const SizedBox(height: 16),
+                          ],
+                        ),
                       ),
                     ),
                   ),

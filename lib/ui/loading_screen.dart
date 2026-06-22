@@ -15,10 +15,7 @@ class LoadingScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          Image.asset(
-            'assets/images/Background 2.png',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/images/Background 2.png', fit: BoxFit.cover),
           SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -35,7 +32,9 @@ class LoadingScreen extends StatelessWidget {
                     width: 48,
                     height: 48,
                     child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00E5FF)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Color(0xFF00E5FF),
+                      ),
                       strokeWidth: 4.0,
                     ),
                   ),
@@ -47,6 +46,12 @@ class LoadingScreen extends StatelessWidget {
                       'assets/images/loading.png',
                       fit: BoxFit.contain,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'This app collects device and app usage data to support push notifications, configuration, and analytics. Privacy policy is available in Settings.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color.fromARGB(43, 255, 255, 255), fontSize: 12),
                   ),
                   SizedBox(height: isLandscape ? 10 : 30),
                 ],

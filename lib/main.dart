@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'config/config_coordinator.dart';
+import 'config/config_storage.dart';
 import 'config/firebase_background_handler.dart';
 import 'config/firebase_service.dart';
 import 'connectivity_service.dart';
@@ -20,6 +21,7 @@ import 'ui/loading_screen.dart';
 import 'ui/offline_screen.dart';
 import 'ui/start_menu.dart';
 import 'ui/winner.dart';
+import 'ui/orientation_enforcer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,19 +53,23 @@ class CyberRunnerApp extends StatelessWidget {
     );
 
     return ImmersiveSystemUiScope(
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Egg Escape',
-        theme: baseTheme.copyWith(
-          textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
-          primaryTextTheme: GoogleFonts.moulTextTheme(
-            baseTheme.primaryTextTheme,
+      child: OrientationEnforcer(
+        // Threshold: if screen width is below this, landscape is disabled.
+        minLandscapeWidth: 700.0,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Egg Escape',
+          theme: baseTheme.copyWith(
+            textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
+            primaryTextTheme: GoogleFonts.moulTextTheme(
+              baseTheme.primaryTextTheme,
+            ),
+            snackBarTheme: SnackBarThemeData(
+              contentTextStyle: GoogleFonts.moul(color: Colors.white),
+            ),
           ),
-          snackBarTheme: SnackBarThemeData(
-            contentTextStyle: GoogleFonts.moul(color: Colors.white),
-          ),
+          home: const _GameShell(),
         ),
-        home: const _GameShell(),
       ),
     );
   }
@@ -81,6 +87,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   bool _showLoading = true;
   bool _showBonusNotification = false;
   bool _offlineScreenDismissed = false;
+  bool _showOfflineFirstLaunchNoNetwork = false;
   String? _configWebViewUrl;
   String? _fallbackWebViewUrl;
 
@@ -140,6 +147,9 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   Future<void> _finishLoadingScreen() async {
     final loadingStarted = DateTime.now();
 
+    await ConfigStorage.instance.init();
+    final hadLaunchMode = ConfigStorage.instance.launchMode != null;
+
     final results = await Future.wait<Object?>([
       ConnectivityService.instance.waitForReliableCheck(
         timeout: LoadingScreen.displayDuration + const Duration(seconds: 3),
@@ -162,7 +172,14 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       _fallbackWebViewUrl = decision.url;
     }
 
-    final showPrompt = decision.target == ConfigLaunchTarget.webView &&
+    if (!hadLaunchMode &&
+        decision.target == ConfigLaunchTarget.game &&
+        ConnectivityService.instance.isOffline.value) {
+      _showOfflineFirstLaunchNoNetwork = true;
+    }
+
+    final showPrompt =
+        decision.target == ConfigLaunchTarget.webView &&
         await FirebaseService.instance.shouldShowNotificationPrompt();
 
     if (showPrompt || FirebaseService.instance.hasPendingNotificationOpen) {
@@ -182,7 +199,8 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   }
 
   Future<void> _completeBonusFlow() async {
-    final notificationUrl = FirebaseService.instance.consumePendingNotificationUrl();
+    final notificationUrl = FirebaseService.instance
+        .consumePendingNotificationUrl();
     FirebaseService.instance.consumePendingNotificationOpen();
 
     final webViewUrl = notificationUrl ?? _fallbackWebViewUrl;
@@ -258,10 +276,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
 
     final configUrl = _configWebViewUrl;
     if (configUrl != null) {
-      return ConfigWebViewScreen(
-        url: configUrl,
-        onExit: _exitConfigWebView,
-      );
+      return ConfigWebViewScreen(url: configUrl, onExit: _exitConfigWebView);
     }
 
     final game = _game;
@@ -288,8 +303,12 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     }
 
     final isOffline = ConnectivityService.instance.isOffline.value;
+    final showOfflineScreen =
+        isOffline &&
+        !_offlineScreenDismissed &&
+        (_configWebViewUrl != null || _showOfflineFirstLaunchNoNetwork);
 
-    if (isOffline && !_offlineScreenDismissed) {
+    if (showOfflineScreen) {
       return OfflineScreen(onBack: _handleOfflineBack);
     }
 

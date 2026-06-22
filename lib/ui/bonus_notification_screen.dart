@@ -90,6 +90,16 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                     fit: BoxFit.contain,
                   ),
 
+                  const SizedBox(height: 12),
+                  Text(
+                    'This app uses a push token and app usage data to deliver bonus notifications and improve the experience. You can review the privacy policy in Settings.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.moul(
+                      color: const Color.fromARGB(45, 255, 255, 255),
+                      fontSize: isLandscape ? 18 : 14,
+                    ),
+                  ),
+
                   const Spacer(flex: 3),
 
                   _BonusButton(

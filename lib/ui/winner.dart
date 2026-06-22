@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -13,8 +14,10 @@ class WinnerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Вычисляем адаптивный отступ (5% от высоты экрана)
+    // Вычисляем адаптивный отступ (25% от высоты экрана)
     final double topPadding = MediaQuery.of(context).size.height * 0.25;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double contentMaxWidth = math.min(600.0, screenWidth * 0.85);
 
     return Container(
       decoration: const BoxDecoration(
@@ -28,7 +31,7 @@ class WinnerOverlay extends StatelessWidget {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
+              constraints: BoxConstraints(maxWidth: contentMaxWidth),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -77,8 +80,12 @@ class _WinnerScoreBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double contentMaxWidth = math.min(600.0, screenWidth * 0.85);
+    final double boxWidth = math.min(contentMaxWidth * 0.8, 420.0);
+
     return SizedBox(
-      width: 250,
+      width: boxWidth,
       child: AspectRatio(
         aspectRatio: 498 / 396,
         child: Stack(

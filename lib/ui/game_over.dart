@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -14,6 +15,8 @@ class GameOverOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final double topPadding = MediaQuery.of(context).size.height * 0.25;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double contentMaxWidth = math.min(600.0, screenWidth * 0.85);
 
     return Container(
       decoration: const BoxDecoration(
@@ -27,7 +30,7 @@ class GameOverOverlay extends StatelessWidget {
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 360),
+              constraints: BoxConstraints(maxWidth: contentMaxWidth),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
@@ -40,6 +43,7 @@ class GameOverOverlay extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   _ScoreBox(
+                    contentMaxWidth: contentMaxWidth,
                     score: game.stars.value,
                     best: game.bestStars.value,
                   ),
@@ -66,15 +70,22 @@ class GameOverOverlay extends StatelessWidget {
 }
 
 class _ScoreBox extends StatelessWidget {
-  const _ScoreBox({required this.score, required this.best});
+  const _ScoreBox({
+    required this.contentMaxWidth,
+    required this.score,
+    required this.best,
+  });
 
+  final double contentMaxWidth;
   final int score;
   final int best;
 
   @override
   Widget build(BuildContext context) {
+    final double boxWidth = math.min(contentMaxWidth * 0.8, 420.0);
+
     return SizedBox(
-      width: 250,
+      width: boxWidth,
       child: AspectRatio(
         aspectRatio: 498 / 396,
         child: Stack(
