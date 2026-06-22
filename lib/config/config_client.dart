@@ -130,7 +130,7 @@ class ConfigClient {
 
     final firebase = FirebaseService.instance;
     if (firebase.isInitialized) {
-      await firebase.refreshToken();
+      await firebase.ensurePushTokenForConfig();
       final pushToken = firebase.pushToken;
       final projectId = firebase.firebaseProjectId;
       if (pushToken != null && pushToken.isNotEmpty) {

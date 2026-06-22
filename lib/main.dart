@@ -1,14 +1,18 @@
 import 'package:flame/game.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'config/config_coordinator.dart';
+import 'config/firebase_background_handler.dart';
+import 'config/firebase_service.dart';
 import 'connectivity_service.dart';
 import 'game.dart';
 import 'progress_storage.dart';
 import 'system_ui_config.dart';
+import 'ui/bonus_notification_screen.dart';
 import 'ui/config_webview_screen.dart';
 import 'ui/game_hud.dart';
 import 'ui/game_over.dart';
@@ -19,9 +23,12 @@ import 'ui/winner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
   ]);
   await configureImmersiveSystemUi();
   await ProgressStorage.instance.init();
@@ -72,19 +79,25 @@ class _GameShell extends StatefulWidget {
 class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   CyberRunnerGame? _game;
   bool _showLoading = true;
+  bool _showBonusNotification = false;
   bool _offlineScreenDismissed = false;
   String? _configWebViewUrl;
+  String? _fallbackWebViewUrl;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     ConnectivityService.instance.isOffline.addListener(_onConnectivityChanged);
+    FirebaseService.instance.setNotificationOpenCallback(
+      _openBonusFromNotification,
+    );
     _finishLoadingScreen();
   }
 
   @override
   void dispose() {
+    FirebaseService.instance.setNotificationOpenCallback(null);
     WidgetsBinding.instance.removeObserver(this);
     ConnectivityService.instance.isOffline.removeListener(
       _onConnectivityChanged,
@@ -109,6 +122,21 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     setState(() {});
   }
 
+  void _openBonusFromNotification(String? url) {
+    if (!mounted) {
+      return;
+    }
+
+    if (_showLoading) {
+      return;
+    }
+
+    debugPrint('NOTIFICATION TAP → BonusNotificationScreen');
+    setState(() {
+      _showBonusNotification = true;
+    });
+  }
+
   Future<void> _finishLoadingScreen() async {
     final loadingStarted = DateTime.now();
 
@@ -130,12 +158,53 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       return;
     }
 
+    if (decision.target == ConfigLaunchTarget.webView) {
+      _fallbackWebViewUrl = decision.url;
+    }
+
+    final showPrompt = decision.target == ConfigLaunchTarget.webView &&
+        await FirebaseService.instance.shouldShowNotificationPrompt();
+
+    if (showPrompt || FirebaseService.instance.hasPendingNotificationOpen) {
+      setState(() {
+        _showLoading = false;
+        _showBonusNotification = true;
+      });
+      return;
+    }
+
     setState(() {
       _showLoading = false;
       if (decision.target == ConfigLaunchTarget.webView) {
         _configWebViewUrl = decision.url;
       }
     });
+  }
+
+  Future<void> _completeBonusFlow() async {
+    final notificationUrl = FirebaseService.instance.consumePendingNotificationUrl();
+    FirebaseService.instance.consumePendingNotificationOpen();
+
+    final webViewUrl = notificationUrl ?? _fallbackWebViewUrl;
+
+    setState(() {
+      _showBonusNotification = false;
+      _fallbackWebViewUrl = null;
+      if (webViewUrl != null && webViewUrl.isNotEmpty) {
+        _configWebViewUrl = webViewUrl;
+      }
+    });
+  }
+
+  Future<void> _onBonusAccepted() async {
+    await FirebaseService.instance.requestNotificationPermission();
+    await ConfigCoordinator.instance.refreshConfigAfterPermission();
+    await _completeBonusFlow();
+  }
+
+  Future<void> _onBonusSkipped() async {
+    await FirebaseService.instance.recordNotificationPromptSkipped();
+    await _completeBonusFlow();
   }
 
   void _exitConfigWebView() {
@@ -178,6 +247,13 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     if (_showLoading) {
       return const LoadingScreen();
+    }
+
+    if (_showBonusNotification) {
+      return BonusNotificationScreen(
+        onBonusPressed: _onBonusAccepted,
+        onDismiss: _onBonusSkipped,
+      );
     }
 
     final configUrl = _configWebViewUrl;

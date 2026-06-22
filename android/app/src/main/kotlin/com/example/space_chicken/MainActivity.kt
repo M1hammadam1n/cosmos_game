@@ -44,11 +44,40 @@ class MainActivity : FlutterActivity() {
                     }
 
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
-                        result.success(true)
+                        if (url.startsWith("intent:")) {
+                            val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                            if (intent != null) {
+                                val info = packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+                                if (info != null) {
+                                    startActivity(intent)
+                                    result.success(true)
+                                    return@setMethodCallHandler
+                                } else {
+                                    val fallbackUrl = intent.getStringExtra("browser_fallback_url")
+                                    if (!fallbackUrl.isNullOrBlank()) {
+                                        val fallbackIntent = Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl))
+                                        startActivity(fallbackIntent)
+                                        result.success(true)
+                                        return@setMethodCallHandler
+                                    }
+                                }
+                            }
+                            result.success(false)
+                        } else {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            startActivity(intent)
+                            result.success(true)
+                        }
                     } catch (e: Exception) {
                         result.error("OPEN_FAILED", e.message, null)
+                    }
+                }
+                "getDefaultUserAgent" -> {
+                    try {
+                        val userAgent = android.webkit.WebSettings.getDefaultUserAgent(this)
+                        result.success(userAgent)
+                    } catch (e: Exception) {
+                        result.error("FAILED", e.message, null)
                     }
                 }
                 else -> result.notImplemented()

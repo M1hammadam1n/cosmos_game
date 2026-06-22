@@ -25,6 +25,13 @@ class AppAttributionConfig {
   /// Legacy key – cleared on init so failed launches can retry config.
   static const String configPermanentlySkippedKey = 'config_permanently_skipped';
 
+  static const String configRequestsDisabledKey = 'config_requests_disabled';
+
+  static const String notificationPromptSkippedAtKey =
+      'notification_prompt_skipped_at';
+
+  static const Duration notificationPromptRetryDelay = Duration(days: 3);
+
   static const String launchModeWebView = 'webview';
   static const String launchModeGame = 'game';
 

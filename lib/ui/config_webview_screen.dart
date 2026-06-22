@@ -2,9 +2,10 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+
+import '../external_link_launcher.dart';
 
 class ConfigWebViewScreen extends StatefulWidget {
   const ConfigWebViewScreen({
@@ -34,47 +35,81 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
   Future<void> _initWebView() async {
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF050713))
-      ..setNavigationDelegate(
-        NavigationDelegate(
-          onPageStarted: (_) {
-            if (!mounted) {
+      ..setBackgroundColor(const Color(0xFF050713));
+
+    // Resolve and set a clean User Agent that doesn't indicate webview
+    String? userAgent;
+    if (Platform.isIOS) {
+      userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+    } else if (Platform.isAndroid) {
+      final rawUA = await ExternalLinkLauncher.getDefaultUserAgent();
+      if (rawUA != null && rawUA.isNotEmpty) {
+        // Clean out webview indicators "; wv" and "Version/X.X"
+        userAgent = rawUA.replaceAll(RegExp(r';\s*wv'), '').replaceAll(RegExp(r'Version/\d+\.\d+\s*'), '');
+      } else {
+        // High-quality fallback user agent for Android
+        userAgent = 'Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
+      }
+    }
+
+    if (userAgent != null) {
+      await controller.setUserAgent(userAgent);
+      debugPrint('SETTING USER AGENT: $userAgent');
+    }
+
+    controller.setNavigationDelegate(
+      NavigationDelegate(
+        onPageStarted: (_) {
+          if (!mounted) {
+            return;
+          }
+          setState(() => _isLoading = true);
+        },
+        onPageFinished: (_) => _refreshNavigationState(),
+        onWebResourceError: (error) {
+          debugPrint(
+            'WEBVIEW ERROR: ${error.errorCode} ${error.description} '
+            'url=${error.url}',
+          );
+          // Handle ERR_TOO_MANY_REDIRECTS (-1007 on iOS, -9 or 0 on Android)
+          if (error.errorCode == -1007 || error.errorCode == -9 || error.errorCode == 0) {
+            final failingUrl = error.url;
+            if (failingUrl != null && failingUrl.isNotEmpty) {
+              _controller?.loadRequest(Uri.parse(failingUrl));
               return;
             }
-            setState(() => _isLoading = true);
-          },
-          onPageFinished: (_) => _refreshNavigationState(),
-          onWebResourceError: (error) {
-            debugPrint(
-              'WEBVIEW ERROR: ${error.errorCode} ${error.description} '
-              'url=${error.url}',
-            );
-            if (!mounted) {
-              return;
-            }
-            setState(() => _isLoading = false);
-          },
-          onNavigationRequest: (request) {
-            final uri = Uri.tryParse(request.url);
-            if (uri == null) {
-              return NavigationDecision.prevent;
-            }
+          }
+          if (!mounted) {
+            return;
+          }
+          setState(() => _isLoading = false);
+        },
+        onNavigationRequest: (request) {
+          final uri = Uri.tryParse(request.url);
+          if (uri == null) {
+            return NavigationDecision.prevent;
+          }
 
-            if (_shouldOpenExternally(uri)) {
-              _openExternal(uri);
-              return NavigationDecision.prevent;
-            }
+          if (_shouldOpenExternally(uri)) {
+            _openExternal(uri);
+            return NavigationDecision.prevent;
+          }
 
-            return NavigationDecision.navigate;
-          },
-          onUrlChange: (_) => _refreshNavigationState(),
-        ),
-      );
+          return NavigationDecision.navigate;
+        },
+        onUrlChange: (_) => _refreshNavigationState(),
+      ),
+    );
 
     if (Platform.isAndroid && controller.platform is AndroidWebViewController) {
       final androidController = controller.platform as AndroidWebViewController;
       await androidController.setMediaPlaybackRequiresUserGesture(false);
       await androidController.setOnShowFileSelector(_androidFilePicker);
+      // Auto-grant protected content access and camera/mic permissions
+      await androidController.setOnPlatformPermissionRequest((request) {
+        debugPrint('WebView Android permission request: $request');
+        request.grant();
+      });
     }
 
     await controller.loadRequest(Uri.parse(widget.url));
@@ -106,38 +141,36 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
   }
 
   bool _shouldOpenExternally(Uri uri) {
-    if (uri.scheme == 'http' || uri.scheme == 'https') {
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme == 'http' || scheme == 'https' || scheme == 'about' || scheme == 'javascript') {
       return false;
     }
-    return uri.scheme == 'tel' ||
-        uri.scheme == 'mailto' ||
-        uri.scheme == 'sms' ||
-        uri.scheme == 'intent';
+    // Any other custom scheme should be opened externally (whatsapp, tg, mailto, tel, sms, intent, etc.)
+    return true;
   }
 
   Future<void> _openExternal(Uri uri) async {
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
+    await ExternalLinkLauncher.open(uri.toString());
   }
 
   Future<List<String>> _androidFilePicker(FileSelectorParams params) async {
-    if (params.isCaptureEnabled) {
+    try {
+      const acceptTypes = <XTypeGroup>[XTypeGroup(extensions: ['*'])];
+      final files = await openFiles(acceptedTypeGroups: acceptTypes);
+      return files.map((file) => file.path).toList();
+    } catch (e) {
+      debugPrint('File selector error: $e');
       return const [];
     }
-
-    const acceptTypes = <XTypeGroup>[XTypeGroup(extensions: ['*'])];
-    final files = await openFiles(acceptedTypeGroups: acceptTypes);
-    return files.map((file) => file.path).whereType<String>().toList();
   }
 
   Future<void> _handleBack() async {
     final controller = _controller;
     if (controller != null && await controller.canGoBack()) {
       await controller.goBack();
-      return;
     }
-    widget.onExit();
+    // If we cannot go back (i.e. on the first page), we do nothing.
+    // This prevents the WebView from being closed.
   }
 
   @override

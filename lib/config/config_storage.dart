@@ -36,6 +36,36 @@ class ConfigStorage {
   bool get isWebViewMode =>
       launchMode == AppAttributionConfig.launchModeWebView && hasCachedUrl;
 
+  bool get configRequestsDisabled =>
+      _preferences?.getBool(AppAttributionConfig.configRequestsDisabledKey) ??
+      false;
+
+  DateTime? get notificationPromptSkippedAt {
+    final millis = _preferences?.getInt(
+      AppAttributionConfig.notificationPromptSkippedAtKey,
+    );
+    if (millis == null) {
+      return null;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(millis);
+  }
+
+  Future<void> setConfigRequestsDisabled(bool disabled) async {
+    await init();
+    await _preferences!.setBool(
+      AppAttributionConfig.configRequestsDisabledKey,
+      disabled,
+    );
+  }
+
+  Future<void> saveNotificationPromptSkippedAt(DateTime time) async {
+    await init();
+    await _preferences!.setInt(
+      AppAttributionConfig.notificationPromptSkippedAtKey,
+      time.millisecondsSinceEpoch,
+    );
+  }
+
   Future<void> saveConfigUrl({
     required String url,
     required int expires,

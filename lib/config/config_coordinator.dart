@@ -63,24 +63,27 @@ class ConfigCoordinator {
 
     final storage = ConfigStorage.instance;
 
-    final notificationUrl = FirebaseService.instance.consumePendingNotificationUrl();
-    if (notificationUrl != null && notificationUrl.isNotEmpty) {
-      _logLaunchDecision(
-        ConfigLaunchDecision.webView(
-          notificationUrl,
-          reason: 'push_notification (not persisted)',
-        ),
-      );
-      return ConfigLaunchDecision.webView(
-        notificationUrl,
-        reason: 'push_notification',
-      );
-    }
-
     if (storage.isCachedUrlValid) {
       final decision = ConfigLaunchDecision.webView(
         storage.cachedUrl!,
         reason: 'cached_url_valid',
+      );
+      _logLaunchDecision(decision);
+      return decision;
+    }
+
+    if (storage.configRequestsDisabled) {
+      if (storage.hasCachedUrl) {
+        final decision = ConfigLaunchDecision.webView(
+          storage.cachedUrl!,
+          reason: 'config_disabled_cached_fallback',
+        );
+        _logLaunchDecision(decision);
+        return decision;
+      }
+
+      final decision = ConfigLaunchDecision.game(
+        reason: 'config_disabled_no_cache',
       );
       _logLaunchDecision(decision);
       return decision;
@@ -109,15 +112,50 @@ class ConfigCoordinator {
       return decision;
     }
 
+    await storage.setConfigRequestsDisabled(true);
     await storage.saveLaunchMode(AppAttributionConfig.launchModeGame);
-    final decision = ConfigLaunchDecision.game(reason: 'config_api_failed_no_cache');
+    final decision = ConfigLaunchDecision.game(
+      reason: 'config_api_failed_no_cache',
+    );
     _logLaunchDecision(decision);
     return decision;
+  }
+
+  /// Sends updated push token to config after user grants notification permission.
+  Future<void> refreshConfigAfterPermission() async {
+    final storage = ConfigStorage.instance;
+    if (storage.configRequestsDisabled) {
+      return;
+    }
+
+    await FirebaseService.instance.ensurePushTokenForConfig();
+
+    try {
+      final response = await ConfigClient.instance.fetchConfig();
+      if (response.isSuccess) {
+        await storage.saveConfigUrl(
+          url: response.url!,
+          expires: response.expires ?? 0,
+        );
+        debugPrint('CONFIG REFRESH AFTER PERMISSION: url saved');
+      } else {
+        debugPrint(
+          'CONFIG REFRESH AFTER PERMISSION: failed '
+          'status=${response.statusCode} ok=${response.ok}',
+        );
+      }
+    } catch (error) {
+      debugPrint('CONFIG REFRESH AFTER PERMISSION failed: $error');
+    }
   }
 
   Future<void> _refreshConfigInBackground(String token) async {
     debugPrint('FIREBASE TOKEN REFRESH: $token');
     final storage = ConfigStorage.instance;
+
+    if (storage.configRequestsDisabled) {
+      return;
+    }
 
     try {
       final response = await ConfigClient.instance.fetchConfig();
