@@ -6,6 +6,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 
+const String _androidNotificationChannelId = 'high_importance_channel_v2';
+const String _androidNotificationChannelName = 'High importance notifications';
+const String _androidNotificationChannelDescription =
+    'Notifications with offers and app updates';
+
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -31,6 +36,7 @@ Future<void> _showDataOnlyBackgroundNotification(RemoteMessage message) async {
 
     final plugin = FlutterLocalNotificationsPlugin();
     await plugin.initialize(settings: settings);
+    await _createAndroidNotificationChannel(plugin);
 
     final title = _stringValue(message.data, const ['title']) ?? 'Egg Escape';
     final body = _stringValue(message.data, const ['body', 'message']) ?? '';
@@ -45,13 +51,20 @@ Future<void> _showDataOnlyBackgroundNotification(RemoteMessage message) async {
     final payload = _stringValue(message.data, const ['url', 'link']);
 
     final androidDetails = AndroidNotificationDetails(
-      'high_importance_channel',
-      'High importance notifications',
-      channelDescription: 'Notifications with offers and app updates',
+      _androidNotificationChannelId,
+      _androidNotificationChannelName,
+      channelDescription: _androidNotificationChannelDescription,
       icon: 'ic_notification',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList(<int>[0, 250, 120, 250]),
       styleInformation: style,
+      channelShowBadge: true,
+      category: AndroidNotificationCategory.message,
+      ticker: title,
+      visibility: NotificationVisibility.public,
     );
 
     await plugin.show(
@@ -66,6 +79,32 @@ Future<void> _showDataOnlyBackgroundNotification(RemoteMessage message) async {
   } catch (error) {
     debugPrint('FCM BACKGROUND DATA NOTIFICATION FAILED: $error');
   }
+}
+
+Future<void> _createAndroidNotificationChannel(
+  FlutterLocalNotificationsPlugin plugin,
+) async {
+  final androidPlugin = plugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
+  if (androidPlugin == null) {
+    debugPrint('FCM BACKGROUND CHANNEL: Android plugin is null');
+    return;
+  }
+
+  await androidPlugin.createNotificationChannel(
+    AndroidNotificationChannel(
+      _androidNotificationChannelId,
+      _androidNotificationChannelName,
+      description: _androidNotificationChannelDescription,
+      importance: Importance.max,
+      playSound: true,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList(<int>[0, 250, 120, 250]),
+      showBadge: true,
+    ),
+  );
 }
 
 Future<StyleInformation?> _bigPictureStyle(

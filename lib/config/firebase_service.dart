@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,11 @@ import 'config_storage.dart';
 
 typedef PushTokenRefreshCallback = Future<void> Function(String token);
 typedef NotificationOpenCallback = void Function(String? url);
+
+const String _androidNotificationChannelId = 'high_importance_channel_v2';
+const String _androidNotificationChannelName = 'High importance notifications';
+const String _androidNotificationChannelDescription =
+    'Notifications with offers and app updates';
 
 class FirebaseService {
   FirebaseService._();
@@ -94,6 +100,7 @@ class FirebaseService {
     try {
       await Firebase.initializeApp();
       _initialized = true;
+      await _initAnalytics();
       _logFirebaseProjectValidation();
       await _initLocalNotifications();
 
@@ -116,6 +123,17 @@ class FirebaseService {
       FirebaseMessaging.onMessage.listen(_showForegroundNotification);
     } catch (error) {
       debugPrint('Firebase init failed: $error');
+    }
+  }
+
+  Future<void> _initAnalytics() async {
+    try {
+      final analytics = FirebaseAnalytics.instance;
+      await analytics.setAnalyticsCollectionEnabled(true);
+      await analytics.logAppOpen();
+      debugPrint('FIREBASE ANALYTICS READY');
+    } catch (error) {
+      debugPrint('Firebase analytics init failed: $error');
     }
   }
 
@@ -309,11 +327,44 @@ class FirebaseService {
         _handleNotificationUrlPayload(details.payload);
       },
     );
+    await _createAndroidNotificationChannel(plugin);
 
     _localNotificationsInitialized = true;
   }
 
+  Future<void> _createAndroidNotificationChannel(
+    FlutterLocalNotificationsPlugin plugin,
+  ) async {
+    final androidPlugin = plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin == null) {
+      debugPrint('FIREBASE NOTIFICATION CHANNEL: Android plugin is null');
+      return;
+    }
+
+    await androidPlugin.createNotificationChannel(
+      AndroidNotificationChannel(
+        _androidNotificationChannelId,
+        _androidNotificationChannelName,
+        description: _androidNotificationChannelDescription,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList(<int>[0, 250, 120, 250]),
+        showBadge: true,
+      ),
+    );
+    debugPrint(
+      'FIREBASE NOTIFICATION CHANNEL READY: $_androidNotificationChannelId',
+    );
+  }
+
   Future<void> _showForegroundNotification(RemoteMessage message) async {
+    debugPrint(
+      "Notification keldi"
+    );
     if (!Platform.isAndroid) {
       return;
     }
@@ -329,13 +380,20 @@ class FirebaseService {
       final payload = _notificationUrl(message.data);
 
       final androidDetails = AndroidNotificationDetails(
-        'high_importance_channel',
-        'High importance notifications',
-        channelDescription: 'Notifications with offers and app updates',
+        _androidNotificationChannelId,
+        _androidNotificationChannelName,
+        channelDescription: _androidNotificationChannelDescription,
         icon: 'ic_notification',
-        importance: Importance.high,
-        priority: Priority.high,
+        importance: Importance.max,
+        priority: Priority.max,
+        playSound: true,
+        enableVibration: true,
+        vibrationPattern: Int64List.fromList(<int>[0, 250, 120, 250]),
         styleInformation: style,
+        channelShowBadge: true,
+        category: AndroidNotificationCategory.message,
+        ticker: title ?? 'Egg Escape',
+        visibility: NotificationVisibility.public,
       );
 
       await FlutterLocalNotificationsPlugin().show(

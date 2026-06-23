@@ -17,7 +17,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val vibrationChannel = "space_chicken/vibration"
     private val linksChannel = "space_chicken/links"
-    private val fcmNotificationChannelId = "high_importance_channel"
+    private val fcmNotificationChannelId = "high_importance_channel_v2"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -132,7 +132,12 @@ class MainActivity : FlutterActivity() {
             fcmNotificationChannelId,
             "High importance notifications",
             NotificationManager.IMPORTANCE_HIGH
-        )
+        ).apply {
+            description = "Notifications with offers and app updates"
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 250, 120, 250)
+            setShowBadge(true)
+        }
         val manager = getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(channel)
     }
