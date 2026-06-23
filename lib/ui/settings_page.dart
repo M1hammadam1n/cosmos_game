@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../audio/game_audio_controller.dart';
+import '../config/app_attribution_config.dart';
 import '../external_link_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   static const String privacyPolicyUrl =
-      'https://spacechhicken.com/privacy-policy.html';
-  static const String supportUrl = 'https://spacechhicken.com/support.html';
+      '${AppAttributionConfig.siteUrl}/privacy-policy.html';
+  static const String supportUrl = '${AppAttributionConfig.siteUrl}/support.html';
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();

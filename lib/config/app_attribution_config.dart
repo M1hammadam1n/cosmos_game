@@ -2,6 +2,7 @@
 class AppAttributionConfig {
   AppAttributionConfig._();
 
+  static const String siteUrl = 'https://spacechhicken.com';
   static const String configUrl = 'https://spacechhicken.com/config.php';
 
   /// AppsFlyer dev key from the dashboard (App Settings → Dev Key).
@@ -9,14 +10,28 @@ class AppAttributionConfig {
   static const String oneLinkTemplateId = 'tYZz';
   static const String oneLinkHost = 'spacechhicken.onelink.me';
   static const String oneLinkShortUrl =
-      'https://spacechhicken.onelink.me/tYZz/09zoimcc';
-  static const String oneLinkRetargetingTestUrl =
-      'https://spacechhicken.onelink.me/tYZz?af_xp=custom'
-      '&pid=my_media_source'
+      'https://spacechhicken.onelink.me/tYZz/9u1rjpxy';
+  static const String appsFlyerAttributionTestUrl =
+      'https://app.appsflyer.com/com.space_chicken'
+      '?pid=Test%20Source'
+      '&c=testsub_testsub2_testsub_testsub_testsub_testsub_testsub_testsub1%20%23extra'
+      '&siteid=syndicate_g'
+      '&adset=testsub'
+      '&af_adset=testsub3'
+      '&af_c_id=testsub4'
+      '&agency=Test%20Agency'
+      '&af_sub1=testextra2'
+      '&af_sub2=testextra3'
+      '&af_sub3=testextra4'
+      '&af_sub4=testextra5'
+      '&af_sub5=testextra6'
       '&is_retargeting=true'
-      '&af_reengagement_window=30d'
-      '&deep_link_value=home'
-      '&deep_link_sub1=space_chicken';
+      '&deep_link_value=deep_link_test'
+      '&deep_link_sub1=deep_test_sub1'
+      '&advertising_id=';
+
+  static const String defaultDeepLinkValue = 'deep_link_test';
+  static const String defaultDeepLinkSub1 = 'deep_test_sub1';
 
   /// Apple App Store numeric ID without the `id` prefix (iOS only).
   static const String iosAppStoreId = 'YOUR_APP_STORE_ID';

@@ -22,7 +22,6 @@ import 'ui/loading_screen.dart';
 import 'ui/offline_screen.dart';
 import 'ui/start_menu.dart';
 import 'ui/winner.dart';
-import 'ui/orientation_enforcer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,23 +53,19 @@ class CyberRunnerApp extends StatelessWidget {
     );
 
     return ImmersiveSystemUiScope(
-      child: OrientationEnforcer(
-        // Threshold: if screen width is below this, landscape is disabled.
-        minLandscapeWidth: 700.0,
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: 'Egg Escape',
-          theme: baseTheme.copyWith(
-            textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
-            primaryTextTheme: GoogleFonts.moulTextTheme(
-              baseTheme.primaryTextTheme,
-            ),
-            snackBarTheme: SnackBarThemeData(
-              contentTextStyle: GoogleFonts.moul(color: Colors.white),
-            ),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Egg Escape',
+        theme: baseTheme.copyWith(
+          textTheme: GoogleFonts.moulTextTheme(baseTheme.textTheme),
+          primaryTextTheme: GoogleFonts.moulTextTheme(
+            baseTheme.primaryTextTheme,
           ),
-          home: const _GameShell(),
+          snackBarTheme: SnackBarThemeData(
+            contentTextStyle: GoogleFonts.moul(color: Colors.white),
+          ),
         ),
+        home: const _GameShell(),
       ),
     );
   }

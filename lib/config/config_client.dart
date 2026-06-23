@@ -83,10 +83,15 @@ class ConfigClient {
         expires = int.tryParse(expiresRaw);
       }
 
+      final url = ensureRequiredDeepLinkParams(
+        payload['url'] as String?,
+        body,
+      );
+
       return ConfigResponse(
         ok: payload['ok'] == true,
         statusCode: response.statusCode,
-        url: payload['url'] as String?,
+        url: url,
         expires: expires,
         message: payload['message'] as String?,
       );
@@ -98,6 +103,56 @@ class ConfigClient {
         message: error.toString(),
       );
     }
+  }
+
+  String? ensureRequiredDeepLinkParams(
+    String? rawUrl, [
+    Map<String, dynamic> source = const {},
+  ]) {
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      return rawUrl;
+    }
+
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null) {
+      return rawUrl;
+    }
+
+    final deepLinkValue =
+        _nonEmptyString(source['deep_link_value']) ??
+        AppAttributionConfig.defaultDeepLinkValue;
+    final deepLinkSub1 =
+        _nonEmptyString(source['deep_link_sub1']) ??
+        _firstNonEmptyDeepLinkSub(source) ??
+        AppAttributionConfig.defaultDeepLinkSub1;
+
+    final query = <String, List<String>>{};
+    for (final entry in uri.queryParametersAll.entries) {
+      query[entry.key] = List<String>.from(entry.value);
+    }
+
+    final changedValue = _putIfMissingOrBlank(
+      query,
+      'deep_link_value',
+      deepLinkValue,
+    );
+    final changedSub1 = _putIfMissingOrBlank(
+      query,
+      'deep_link_sub1',
+      deepLinkSub1,
+    );
+
+    if (!changedValue && !changedSub1) {
+      return rawUrl;
+    }
+
+    final normalized = uri.replace(queryParameters: null).replace(
+      queryParameters: query.map(
+        (key, values) => MapEntry(key, values.isEmpty ? '' : values.last),
+      ),
+    );
+    debugPrint('CONFIG URL NORMALIZED: $normalized');
+    return normalized.toString();
   }
 
   Future<Map<String, dynamic>> _buildRequestBody() async {
@@ -147,5 +202,45 @@ class ConfigClient {
     }
 
     return body;
+  }
+
+  bool _putIfMissingOrBlank(
+    Map<String, List<String>> query,
+    String key,
+    String value,
+  ) {
+    final values = query[key];
+    if (values != null &&
+        values.isNotEmpty &&
+        values.any((item) => item.trim().isNotEmpty)) {
+      return false;
+    }
+
+    query[key] = <String>[value];
+    return true;
+  }
+
+  String? _firstNonEmptyDeepLinkSub(Map<String, dynamic> source) {
+    for (final entry in source.entries) {
+      if (!entry.key.startsWith('deep_link_sub')) {
+        continue;
+      }
+
+      final value = _nonEmptyString(entry.value);
+      if (value != null) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  String? _nonEmptyString(Object? value) {
+    if (value == null) {
+      return null;
+    }
+
+    final stringValue = value.toString().trim();
+    return stringValue.isEmpty ? null : stringValue;
   }
 }

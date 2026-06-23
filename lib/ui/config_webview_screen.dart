@@ -118,6 +118,7 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
       });
     }
 
+    debugPrint('WEBVIEW LOAD URL: ${widget.url}');
     await controller.loadRequest(Uri.parse(widget.url));
 
     if (!mounted) {
@@ -159,20 +160,55 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
   }
 
   Future<void> _openExternal(Uri uri) async {
-    await ExternalLinkLauncher.open(uri.toString());
+    final opened = await ExternalLinkLauncher.open(uri.toString());
+    if (!opened) {
+      debugPrint('WEBVIEW EXTERNAL URL NOT HANDLED: $uri');
+    }
   }
 
   Future<List<String>> _androidFilePicker(FileSelectorParams params) async {
     try {
-      const acceptTypes = <XTypeGroup>[
-        XTypeGroup(extensions: ['*']),
-      ];
-      final files = await openFiles(acceptedTypeGroups: acceptTypes);
-      return files.map((file) => file.path).toList();
+      final acceptedTypeGroups = _acceptedTypeGroupsFor(params);
+      debugPrint(
+        'WEBVIEW FILE PICKER: mode=${params.mode.name} '
+        'capture=${params.isCaptureEnabled} accept=${params.acceptTypes}',
+      );
+
+      if (params.mode == FileSelectorMode.openMultiple) {
+        final files = await openFiles(
+          acceptedTypeGroups: acceptedTypeGroups,
+        );
+        return files.map((file) => file.path).toList();
+      }
+
+      final file = await openFile(acceptedTypeGroups: acceptedTypeGroups);
+      if (file == null) {
+        return const [];
+      }
+
+      return <String>[file.path];
     } catch (e) {
       debugPrint('File selector error: $e');
       return const [];
     }
+  }
+
+  List<XTypeGroup> _acceptedTypeGroupsFor(FileSelectorParams params) {
+    final mimeTypes = params.acceptTypes
+        .map((type) => type.trim())
+        .where((type) => type.isNotEmpty && type != '*/*')
+        .toSet()
+        .toList();
+
+    if (mimeTypes.isEmpty) {
+      return const <XTypeGroup>[
+        XTypeGroup(label: 'All files'),
+      ];
+    }
+
+    return <XTypeGroup>[
+      XTypeGroup(label: 'Accepted files', mimeTypes: mimeTypes),
+    ];
   }
 
   Future<void> _handleBack() async {

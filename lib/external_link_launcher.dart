@@ -29,11 +29,12 @@ class ExternalLinkLauncher {
 
     try {
       if (await canLaunchUrl(uri)) {
-        return launchUrl(uri, mode: LaunchMode.externalApplication);
+        return await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
 
-      return launchUrl(uri, mode: LaunchMode.platformDefault);
-    } on PlatformException {
+      return await launchUrl(uri, mode: LaunchMode.platformDefault);
+    } catch (error) {
+      debugPrint('External link open failed: $url ($error)');
       return false;
     }
   }

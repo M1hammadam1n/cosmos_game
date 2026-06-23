@@ -111,9 +111,9 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                       isLandscape
                           ? 'assets/images/Rectangle 4076_2.png'
                           : 'assets/images/Rectangle 4077.png',
-                      fit: BoxFit.cover,
-                      width: isLandscape ? 465 : 30,
-                      height: 50,
+                      fit: BoxFit.contain,
+                      width: isLandscape ? 465 : 280,
+                      height: isLandscape ? 50 : 56,
                     ),
                   ),
 
@@ -125,7 +125,7 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                       widget.onDismiss();
                     },
                     child: Text(
-                      'Skip',
+                      'Not now',
                       style: GoogleFonts.moul(
                         color: Colors.white54,
                         fontSize: isLandscape ? 30 : 25,

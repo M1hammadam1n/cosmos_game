@@ -65,19 +65,13 @@ class ConfigCoordinator {
 
     final storage = ConfigStorage.instance;
 
-    if (storage.isCachedUrlValid) {
-      final decision = ConfigLaunchDecision.webView(
-        storage.cachedUrl!,
-        reason: 'cached_url_valid',
-      );
-      _logLaunchDecision(decision);
-      return decision;
-    }
-
     if (storage.configRequestsDisabled) {
       if (storage.hasCachedUrl) {
-        final decision = ConfigLaunchDecision.webView(
+        final cachedUrl = ConfigClient.instance.ensureRequiredDeepLinkParams(
           storage.cachedUrl!,
+        )!;
+        final decision = ConfigLaunchDecision.webView(
+          cachedUrl,
           reason: 'config_disabled_cached_fallback',
         );
         _logLaunchDecision(decision);
@@ -91,6 +85,7 @@ class ConfigCoordinator {
       return decision;
     }
 
+    final cachedUrl = storage.cachedUrl;
     final response = await ConfigClient.instance.fetchConfig();
     if (response.isSuccess) {
       await storage.saveConfigUrl(
@@ -113,9 +108,11 @@ class ConfigCoordinator {
       return decision;
     }
 
-    if (storage.hasCachedUrl) {
+    if (cachedUrl != null && cachedUrl.isNotEmpty) {
+      final normalizedCachedUrl = ConfigClient.instance
+          .ensureRequiredDeepLinkParams(cachedUrl)!;
       final decision = ConfigLaunchDecision.webView(
-        storage.cachedUrl!,
+        normalizedCachedUrl,
         reason: 'config_api_failed_cached_fallback',
       );
       _logLaunchDecision(decision);
