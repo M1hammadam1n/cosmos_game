@@ -41,7 +41,9 @@ class ExternalLinkLauncher {
   static Future<String?> getDefaultUserAgent() async {
     if (!kIsWeb && Platform.isAndroid) {
       try {
-        return await _androidChannel.invokeMethod<String>('getDefaultUserAgent');
+        return await _androidChannel.invokeMethod<String>(
+          'getDefaultUserAgent',
+        );
       } catch (e) {
         debugPrint('Failed to get default user agent: $e');
         return null;
@@ -50,4 +52,3 @@ class ExternalLinkLauncher {
     return null;
   }
 }
-

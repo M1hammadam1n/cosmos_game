@@ -40,15 +40,19 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
     // Resolve and set a clean User Agent that doesn't indicate webview
     String? userAgent;
     if (Platform.isIOS) {
-      userAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+      userAgent =
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
     } else if (Platform.isAndroid) {
       final rawUA = await ExternalLinkLauncher.getDefaultUserAgent();
       if (rawUA != null && rawUA.isNotEmpty) {
         // Clean out webview indicators "; wv" and "Version/X.X"
-        userAgent = rawUA.replaceAll(RegExp(r';\s*wv'), '').replaceAll(RegExp(r'Version/\d+\.\d+\s*'), '');
+        userAgent = rawUA
+            .replaceAll(RegExp(r';\s*wv'), '')
+            .replaceAll(RegExp(r'Version/\d+\.\d+\s*'), '');
       } else {
         // High-quality fallback user agent for Android
-        userAgent = 'Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
+        userAgent =
+            'Mozilla/5.0 (Linux; Android 13; SM-G998B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36';
       }
     }
 
@@ -72,7 +76,9 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
             'url=${error.url}',
           );
           // Handle ERR_TOO_MANY_REDIRECTS (-1007 on iOS, -9 or 0 on Android)
-          if (error.errorCode == -1007 || error.errorCode == -9 || error.errorCode == 0) {
+          if (error.errorCode == -1007 ||
+              error.errorCode == -9 ||
+              error.errorCode == 0) {
             final failingUrl = error.url;
             if (failingUrl != null && failingUrl.isNotEmpty) {
               _controller?.loadRequest(Uri.parse(failingUrl));
@@ -142,7 +148,10 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
 
   bool _shouldOpenExternally(Uri uri) {
     final scheme = uri.scheme.toLowerCase();
-    if (scheme == 'http' || scheme == 'https' || scheme == 'about' || scheme == 'javascript') {
+    if (scheme == 'http' ||
+        scheme == 'https' ||
+        scheme == 'about' ||
+        scheme == 'javascript') {
       return false;
     }
     // Any other custom scheme should be opened externally (whatsapp, tg, mailto, tel, sms, intent, etc.)
@@ -155,7 +164,9 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
 
   Future<List<String>> _androidFilePicker(FileSelectorParams params) async {
     try {
-      const acceptTypes = <XTypeGroup>[XTypeGroup(extensions: ['*'])];
+      const acceptTypes = <XTypeGroup>[
+        XTypeGroup(extensions: ['*']),
+      ];
       final files = await openFiles(acceptedTypeGroups: acceptTypes);
       return files.map((file) => file.path).toList();
     } catch (e) {
@@ -193,9 +204,7 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
               if (controller != null) WebViewWidget(controller: controller),
               if (_isLoading || controller == null)
                 const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF00E5FF),
-                  ),
+                  child: CircularProgressIndicator(color: Color(0xFF00E5FF)),
                 ),
               if (_canGoBack)
                 Positioned(

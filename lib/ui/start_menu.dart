@@ -39,7 +39,7 @@ class _StartMenuState extends State<StartMenu> {
         fit: StackFit.expand,
         children: [
           Image.asset(
-            'assets/images/Background_start_menu.png',
+            'assets/images/Background_start_menu.jpg',
             fit: BoxFit.cover,
           ),
           const CustomPaint(painter: _StarFieldPainter()),

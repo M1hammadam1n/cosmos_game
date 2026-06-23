@@ -41,10 +41,54 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/
+    - assets/images/500_error.png
+    - assets/images/Allow notifications about bonuses and promos.png
+    - assets/images/Allow notifications about bonuses and promos_2.png
+    - assets/images/back.png
+    - assets/images/back_to_menu.png
+    - assets/images/Background 2.jpg
+    - assets/images/Background_game_over.png
+    - assets/images/Background_settings.png
+    - assets/images/Background_start_menu.jpg
+    - assets/images/BGforNotifications.jpg
+    - assets/images/BGforNotifications_gorezantal.jpg
+    - assets/images/btton_on.png
+    - assets/images/button_back.png
+    - assets/images/button_off.png
+    - assets/images/Cutout 1.png
+    - assets/images/egg_junior.png
+    - assets/images/egg_middle.png
+    - assets/images/egg_super.png
+    - assets/images/game_over.png
+    - assets/images/game_over_box.png
+    - assets/images/general_shot.png
+    - assets/images/gold_egg_for_number.png
+    - assets/images/Home.png
+    - assets/images/Left.png
+    - assets/images/loading.png
+    - assets/images/Logo_master.png
+    - assets/images/logout.png
+    - assets/images/Music.png
+    - assets/images/object_for_line.png
+    - assets/images/obstacles_1.png
+    - assets/images/obstacles_2.png
+    - assets/images/obstacles_3.png
+    - assets/images/obstacles_4.png
+    - assets/images/Privacy Policy.png
+    - assets/images/Rectangle 4076_2.png
+    - assets/images/Rectangle 4077.png
+    - assets/images/Right.png
+    - assets/images/Setting_button.png
+    - assets/images/settings.png
+    - assets/images/settings_contaner.png
+    - assets/images/settings_text.png
+    - assets/images/Sound.png
+    - assets/images/start_again.png
+    - assets/images/Stay tuned with best offers from our casino.png
+    - assets/images/Stay tuned with best offers from our casino_2.png
+    - assets/images/Support.png
     - assets/images/winner.png
     - assets/images/winner_banner.png
-    - assets/icons/
     - assets/music/button_sound_effect.mp3
     - assets/music/music_for_game.m4a
     - assets/music/muve_sound.mp3

@@ -5,7 +5,5 @@ import 'package:flutter/foundation.dart';
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  debugPrint(
-    'FCM BACKGROUND: id=${message.messageId} data=${message.data}',
-  );
+  debugPrint('FCM BACKGROUND: id=${message.messageId} data=${message.data}');
 }

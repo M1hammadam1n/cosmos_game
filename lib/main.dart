@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
+import 'config/app_attribution_config.dart';
 import 'config/config_coordinator.dart';
 import 'config/config_storage.dart';
 import 'config/firebase_background_handler.dart';
@@ -122,8 +123,17 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       return;
     }
 
-    if (!ConnectivityService.instance.isOffline.value) {
+    final isOffline = ConnectivityService.instance.isOffline.value;
+    if (!isOffline) {
       _offlineScreenDismissed = false;
+      if (_showOfflineFirstLaunchNoNetwork && !_showLoading) {
+        setState(() {
+          _showLoading = true;
+          _showOfflineFirstLaunchNoNetwork = false;
+        });
+        _finishLoadingScreen();
+        return;
+      }
     }
 
     setState(() {});
@@ -138,9 +148,19 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       return;
     }
 
-    debugPrint('NOTIFICATION TAP → BonusNotificationScreen');
+    if (url != null && url.isNotEmpty) {
+      debugPrint('NOTIFICATION TAP -> WebView: $url');
+      setState(() {
+        _showBonusNotification = false;
+        _fallbackWebViewUrl = null;
+        _configWebViewUrl = url;
+      });
+      return;
+    }
+
+    debugPrint('NOTIFICATION TAP: no url payload');
     setState(() {
-      _showBonusNotification = true;
+      _showBonusNotification = false;
     });
   }
 
@@ -148,15 +168,36 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     final loadingStarted = DateTime.now();
 
     await ConfigStorage.instance.init();
-    final hadLaunchMode = ConfigStorage.instance.launchMode != null;
+    final storage = ConfigStorage.instance;
+    final launchMode = storage.launchMode;
+    final hadLaunchMode = launchMode != null;
 
-    final results = await Future.wait<Object?>([
-      ConnectivityService.instance.waitForReliableCheck(
-        timeout: LoadingScreen.displayDuration + const Duration(seconds: 3),
-      ),
-      ConfigCoordinator.instance.resolveLaunchDecision(),
-    ]);
-    final decision = results[1]! as ConfigLaunchDecision;
+    final isOffline = await ConnectivityService.instance.waitForReliableCheck(
+      timeout: LoadingScreen.displayDuration + const Duration(seconds: 3),
+    );
+
+    late final ConfigLaunchDecision decision;
+    if (isOffline) {
+      if (!hadLaunchMode) {
+        decision = ConfigLaunchDecision.offline(
+          reason: 'first_launch_no_network',
+        );
+      } else if (launchMode == AppAttributionConfig.launchModeWebView &&
+          storage.hasCachedUrl) {
+        decision = ConfigLaunchDecision.webView(
+          storage.cachedUrl!,
+          reason: 'webview_mode_no_network_cached_url',
+        );
+      } else if (launchMode == AppAttributionConfig.launchModeGame) {
+        decision = ConfigLaunchDecision.game(reason: 'game_mode_no_network');
+      } else {
+        decision = ConfigLaunchDecision.offline(
+          reason: 'no_network_no_usable_mode',
+        );
+      }
+    } else {
+      decision = await ConfigCoordinator.instance.resolveLaunchDecision();
+    }
 
     final elapsed = DateTime.now().difference(loadingStarted);
     final remaining = LoadingScreen.displayDuration - elapsed;
@@ -168,21 +209,37 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       return;
     }
 
+    if (decision.target == ConfigLaunchTarget.offline) {
+      setState(() {
+        _showLoading = false;
+        _showOfflineFirstLaunchNoNetwork = true;
+      });
+      return;
+    }
+
     if (decision.target == ConfigLaunchTarget.webView) {
       _fallbackWebViewUrl = decision.url;
     }
 
-    if (!hadLaunchMode &&
-        decision.target == ConfigLaunchTarget.game &&
-        ConnectivityService.instance.isOffline.value) {
-      _showOfflineFirstLaunchNoNetwork = true;
+    final notificationUrl = FirebaseService.instance.pendingNotificationUrl;
+    if (notificationUrl != null && notificationUrl.isNotEmpty) {
+      FirebaseService.instance.consumePendingNotificationOpen();
+      final oneShotUrl = FirebaseService.instance
+          .consumePendingNotificationUrl();
+      setState(() {
+        _showLoading = false;
+        _showBonusNotification = false;
+        _fallbackWebViewUrl = null;
+        _configWebViewUrl = oneShotUrl;
+      });
+      return;
     }
 
     final showPrompt =
         decision.target == ConfigLaunchTarget.webView &&
         await FirebaseService.instance.shouldShowNotificationPrompt();
 
-    if (showPrompt || FirebaseService.instance.hasPendingNotificationOpen) {
+    if (showPrompt) {
       setState(() {
         _showLoading = false;
         _showBonusNotification = true;
@@ -256,7 +313,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     setState(() {
       _game = null;
       _showLoading = true;
-      _offlineScreenDismissed = true;
+      _offlineScreenDismissed = false;
     });
     await _finishLoadingScreen();
   }
@@ -272,11 +329,6 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
         onBonusPressed: _onBonusAccepted,
         onDismiss: _onBonusSkipped,
       );
-    }
-
-    final configUrl = _configWebViewUrl;
-    if (configUrl != null) {
-      return ConfigWebViewScreen(url: configUrl, onExit: _exitConfigWebView);
     }
 
     final game = _game;
@@ -310,6 +362,11 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
 
     if (showOfflineScreen) {
       return OfflineScreen(onBack: _handleOfflineBack);
+    }
+
+    final configUrl = _configWebViewUrl;
+    if (configUrl != null) {
+      return ConfigWebViewScreen(url: configUrl, onExit: _exitConfigWebView);
     }
 
     return StartMenu(onStart: _startGame);

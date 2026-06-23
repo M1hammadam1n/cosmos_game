@@ -88,7 +88,8 @@ class FirebaseService {
         }
       });
 
-      final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
       _handleNotificationOpen(initialMessage);
 
       FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationOpen);
@@ -121,9 +122,7 @@ class FirebaseService {
     }
 
     final settings = await getNotificationSettings();
-    debugPrint(
-      'FCM PERMISSION STATUS: ${settings.authorizationStatus.name}',
-    );
+    debugPrint('FCM PERMISSION STATUS: ${settings.authorizationStatus.name}');
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
@@ -165,14 +164,18 @@ class FirebaseService {
     if (settings.authorizationStatus == AuthorizationStatus.authorized ||
         settings.authorizationStatus == AuthorizationStatus.provisional) {
       await _tryFetchToken(logLabel: 'after_permission');
-      debugPrint('FIREBASE TOKEN (after permission): ${_pushToken ?? "(null)"}');
+      debugPrint(
+        'FIREBASE TOKEN (after permission): ${_pushToken ?? "(null)"}',
+      );
     }
 
     return settings;
   }
 
   Future<void> recordNotificationPromptSkipped() async {
-    await ConfigStorage.instance.saveNotificationPromptSkippedAt(DateTime.now());
+    await ConfigStorage.instance.saveNotificationPromptSkippedAt(
+      DateTime.now(),
+    );
     debugPrint('NOTIFICATION PROMPT: custom skip recorded');
   }
 

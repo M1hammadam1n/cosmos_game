@@ -11,7 +11,7 @@ class OfflineScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          Image.asset('assets/images/Background 2.png', fit: BoxFit.cover),
+          Image.asset('assets/images/Background 2.jpg', fit: BoxFit.cover),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),

@@ -15,7 +15,7 @@ class LoadingScreen extends StatelessWidget {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          Image.asset('assets/images/Background 2.png', fit: BoxFit.cover),
+          Image.asset('assets/images/Background 2.jpg', fit: BoxFit.cover),
           SafeArea(
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -51,7 +51,10 @@ class LoadingScreen extends StatelessWidget {
                   const Text(
                     'This app collects device and app usage data to support push notifications, configuration, and analytics. Privacy policy is available in Settings.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Color.fromARGB(43, 255, 255, 255), fontSize: 12),
+                    style: TextStyle(
+                      color: Color.fromARGB(43, 255, 255, 255),
+                      fontSize: 12,
+                    ),
                   ),
                   SizedBox(height: isLandscape ? 10 : 30),
                 ],

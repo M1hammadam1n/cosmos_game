@@ -5,7 +5,18 @@ class AppAttributionConfig {
   static const String configUrl = 'https://spacechhicken.com/config.php';
 
   /// AppsFlyer dev key from the dashboard (App Settings → Dev Key).
-  static const String appsFlyerDevKey = 'YOUR_APPSFLYER_DEV_KEY';
+  static const String appsFlyerDevKey = 'zooKQ2tfTiuoS8f5rEtj7g';
+  static const String oneLinkTemplateId = 'tYZz';
+  static const String oneLinkHost = 'spacechhicken.onelink.me';
+  static const String oneLinkShortUrl =
+      'https://spacechhicken.onelink.me/tYZz/09zoimcc';
+  static const String oneLinkRetargetingTestUrl =
+      'https://spacechhicken.onelink.me/tYZz?af_xp=custom'
+      '&pid=my_media_source'
+      '&is_retargeting=true'
+      '&af_reengagement_window=30d'
+      '&deep_link_value=home'
+      '&deep_link_sub1=space_chicken';
 
   /// Apple App Store numeric ID without the `id` prefix (iOS only).
   static const String iosAppStoreId = 'YOUR_APP_STORE_ID';
@@ -21,9 +32,11 @@ class AppAttributionConfig {
   static const String cachedUrlKey = 'config_cached_url';
   static const String cachedExpiresKey = 'config_cached_expires';
   static const String launchModeKey = 'config_launch_mode';
+  static const String appsFlyerCustomerUserIdKey = 'appsflyer_customer_user_id';
 
   /// Legacy key – cleared on init so failed launches can retry config.
-  static const String configPermanentlySkippedKey = 'config_permanently_skipped';
+  static const String configPermanentlySkippedKey =
+      'config_permanently_skipped';
 
   static const String configRequestsDisabledKey = 'config_requests_disabled';
 
@@ -36,8 +49,7 @@ class AppAttributionConfig {
   static const String launchModeGame = 'game';
 
   static bool get isAppsFlyerDevKeyConfigured =>
-      appsFlyerDevKey.isNotEmpty &&
-      appsFlyerDevKey != 'YOUR_APPSFLYER_DEV_KEY';
+      appsFlyerDevKey.isNotEmpty && appsFlyerDevKey != 'YOUR_APPSFLYER_DEV_KEY';
 
   static bool get isIosAppStoreIdConfigured =>
       iosAppStoreId.isNotEmpty && iosAppStoreId != 'YOUR_APP_STORE_ID';

@@ -6,17 +6,10 @@ import 'config_client.dart';
 import 'config_storage.dart';
 import 'firebase_service.dart';
 
-enum ConfigLaunchTarget {
-  webView,
-  game,
-}
+enum ConfigLaunchTarget { webView, game, offline }
 
 class ConfigLaunchDecision {
-  const ConfigLaunchDecision._({
-    required this.target,
-    this.url,
-    this.reason,
-  });
+  const ConfigLaunchDecision._({required this.target, this.url, this.reason});
 
   final ConfigLaunchTarget target;
   final String? url;
@@ -36,6 +29,13 @@ class ConfigLaunchDecision {
       reason: reason,
     );
   }
+
+  factory ConfigLaunchDecision.offline({String? reason}) {
+    return ConfigLaunchDecision._(
+      target: ConfigLaunchTarget.offline,
+      reason: reason,
+    );
+  }
 }
 
 class ConfigCoordinator {
@@ -51,7 +51,9 @@ class ConfigCoordinator {
     }
 
     await ConfigStorage.instance.init();
-    FirebaseService.instance.setTokenRefreshCallback(_refreshConfigInBackground);
+    FirebaseService.instance.setTokenRefreshCallback(
+      _refreshConfigInBackground,
+    );
     await FirebaseService.instance.init();
     await AppsFlyerService.instance.init();
 
@@ -98,6 +100,14 @@ class ConfigCoordinator {
       final decision = ConfigLaunchDecision.webView(
         response.url!,
         reason: 'config_api_success',
+      );
+      _logLaunchDecision(decision);
+      return decision;
+    }
+
+    if (response.isNetworkFailure && !storage.hasCachedUrl) {
+      final decision = ConfigLaunchDecision.offline(
+        reason: 'config_network_failed_no_cache',
       );
       _logLaunchDecision(decision);
       return decision;
@@ -175,8 +185,10 @@ class ConfigCoordinator {
       debugPrint(
         'LAUNCH MODE: webview | reason=${decision.reason} | url=${decision.url}',
       );
-    } else {
+    } else if (decision.target == ConfigLaunchTarget.game) {
       debugPrint('LAUNCH MODE: game | reason=${decision.reason}');
+    } else {
+      debugPrint('LAUNCH MODE: offline | reason=${decision.reason}');
     }
   }
 }

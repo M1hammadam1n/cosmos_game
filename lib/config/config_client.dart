@@ -24,7 +24,10 @@ class ConfigResponse {
   final int? expires;
   final String? message;
 
-  bool get isSuccess => statusCode == 200 && ok && url != null && url!.isNotEmpty;
+  bool get isSuccess =>
+      statusCode == 200 && ok && url != null && url!.isNotEmpty;
+
+  bool get isNetworkFailure => statusCode == 0;
 }
 
 class ConfigClient {
@@ -99,7 +102,8 @@ class ConfigClient {
 
   Future<Map<String, dynamic>> _buildRequestBody() async {
     // Conversion fields are copied unchanged from AppsFlyer payload.
-    final conversionData = await AppsFlyerService.instance.waitForConversionData();
+    final conversionData = await AppsFlyerService.instance
+        .waitForConversionData();
     final body = Map<String, dynamic>.from(conversionData);
 
     final deepLinkData = AppsFlyerService.instance.deepLinkData;
@@ -112,7 +116,8 @@ class ConfigClient {
     final packageInfo = await PackageInfo.fromPlatform();
     final afId = await AppsFlyerService.instance.getAppsFlyerId();
     final locale = PlatformDispatcher.instance.locale;
-    final localeValue = locale.countryCode == null || locale.countryCode!.isEmpty
+    final localeValue =
+        locale.countryCode == null || locale.countryCode!.isEmpty
         ? locale.languageCode
         : '${locale.languageCode}_${locale.countryCode}';
 

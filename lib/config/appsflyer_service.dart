@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_attribution_config.dart';
 
@@ -50,6 +52,7 @@ class AppsFlyerService {
     final options = AppsFlyerOptions(
       afDevKey: AppAttributionConfig.appsFlyerDevKey,
       appId: AppAttributionConfig.iosAppStoreId,
+      appInviteOneLink: AppAttributionConfig.oneLinkTemplateId,
       showDebug: kDebugMode,
     );
 
@@ -60,6 +63,12 @@ class AppsFlyerService {
     sdk.onInstallConversionData(_handleConversionData);
     sdk.onAppOpenAttribution(_handleAppOpenAttribution);
     sdk.onDeepLinking(_handleDeepLink);
+    sdk.addPushNotificationDeepLinkPath(const ['url']);
+    sdk.addPushNotificationDeepLinkPath(const ['link']);
+
+    final customerUserId = await _getOrCreateCustomerUserId();
+    sdk.setCustomerUserId(customerUserId);
+    debugPrint('AF CUID: $customerUserId');
 
     await sdk.initSdk(
       registerConversionDataCallback: true,
@@ -83,6 +92,28 @@ class AppsFlyerService {
       debugPrint('AppsFlyer UID error: $error');
       return null;
     }
+  }
+
+  Future<String> _getOrCreateCustomerUserId() async {
+    final preferences = await SharedPreferences.getInstance();
+    final cached = preferences.getString(
+      AppAttributionConfig.appsFlyerCustomerUserIdKey,
+    );
+    if (cached != null && cached.isNotEmpty) {
+      return cached;
+    }
+
+    final random = math.Random.secure();
+    final randomPart = List<int>.generate(
+      16,
+      (_) => random.nextInt(256),
+    ).map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    final id = 'install_${DateTime.now().microsecondsSinceEpoch}_$randomPart';
+    await preferences.setString(
+      AppAttributionConfig.appsFlyerCustomerUserIdKey,
+      id,
+    );
+    return id;
   }
 
   Future<Map<String, dynamic>> waitForConversionData() async {
@@ -154,9 +185,7 @@ class AppsFlyerService {
 
     final map = Map<String, dynamic>.from(result);
     final nested = map['payload'] ?? map['data'];
-    final payload = nested is Map
-        ? Map<String, dynamic>.from(nested)
-        : map;
+    final payload = nested is Map ? Map<String, dynamic>.from(nested) : map;
 
     if (payload.isEmpty) {
       return;

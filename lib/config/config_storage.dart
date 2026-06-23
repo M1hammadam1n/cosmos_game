@@ -14,11 +14,14 @@ class ConfigStorage {
     await _migrateLegacySkipFlag();
   }
 
-  String? get cachedUrl => _preferences?.getString(AppAttributionConfig.cachedUrlKey);
+  String? get cachedUrl =>
+      _preferences?.getString(AppAttributionConfig.cachedUrlKey);
 
-  int? get cachedExpires => _preferences?.getInt(AppAttributionConfig.cachedExpiresKey);
+  int? get cachedExpires =>
+      _preferences?.getInt(AppAttributionConfig.cachedExpiresKey);
 
-  String? get launchMode => _preferences?.getString(AppAttributionConfig.launchModeKey);
+  String? get launchMode =>
+      _preferences?.getString(AppAttributionConfig.launchModeKey);
 
   bool get hasCachedUrl => cachedUrl != null && cachedUrl!.isNotEmpty;
 
@@ -93,7 +96,9 @@ class ConfigStorage {
       AppAttributionConfig.configPermanentlySkippedKey,
     );
     if (skipped == true) {
-      await _preferences!.remove(AppAttributionConfig.configPermanentlySkippedKey);
+      await _preferences!.remove(
+        AppAttributionConfig.configPermanentlySkippedKey,
+      );
       await saveLaunchMode(AppAttributionConfig.launchModeGame);
     }
   }

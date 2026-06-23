@@ -61,8 +61,8 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
         children: [
           Image.asset(
             isLandscape
-                ? 'assets/images/BGforNotifications_gorezantal.png'
-                : 'assets/images/BGforNotifications.png',
+                ? 'assets/images/BGforNotifications_gorezantal.jpg'
+                : 'assets/images/BGforNotifications.jpg',
             fit: BoxFit.cover,
           ),
           SafeArea(
