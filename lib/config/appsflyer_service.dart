@@ -155,8 +155,13 @@ class AppsFlyerService {
     if (payload is Map) {
       // Store inner conversion fields exactly as AppsFlyer returns them.
       _conversionData = Map<String, dynamic>.from(payload);
-      debugPrint('AF CONVERSION FIELDS: ${_encodeForLog(_conversionData)}');
+    } else {
+      // Some SDK versions/platforms can deliver the conversion fields directly.
+      envelope.remove('status');
+      _conversionData = envelope;
     }
+
+    debugPrint('AF CONVERSION FIELDS: ${_encodeForLog(_conversionData)}');
 
     _completeConversionReady();
   }

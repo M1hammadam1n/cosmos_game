@@ -40,6 +40,7 @@ class AppAttributionConfig {
   static const String iosStoreId = 'idYOUR_APP_STORE_ID';
 
   static const String androidPackageName = 'com.space_chicken';
+  static const String expectedFirebaseProjectId = 'marfa-290610-efa21';
 
   static const Duration conversionDataTimeout = Duration(seconds: 15);
   static const Duration configRequestTimeout = Duration(seconds: 20);

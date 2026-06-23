@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "920977444220",
-    "project_id": "testapkfile-38f96",
-    "storage_bucket": "testapkfile-38f96.firebasestorage.app"
+    "project_number": "343173914613",
+    "project_id": "marfa-290610-efa21",
+    "storage_bucket": "marfa-290610-efa21.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:920977444220:android:b9d15468bde580c46628f9",
+        "mobilesdk_app_id": "1:343173914613:android:6b4c42874d1def00484abc",
         "android_client_info": {
           "package_name": "com.space_chicken"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB6hRzT8NfA-T5tbdDD-biDP7MnpyFoIYk"
+          "current_key": "AIzaSyDl1hif3U-g8cQW0VYVOnKQG2RO4RRhdx0"
         }
       ],
       "services": {

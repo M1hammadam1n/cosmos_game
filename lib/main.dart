@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flame/game.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'config/app_attribution_config.dart';
+import 'config/config_client.dart';
 import 'config/config_coordinator.dart';
 import 'config/config_storage.dart';
 import 'config/firebase_background_handler.dart';
@@ -25,6 +28,7 @@ import 'ui/winner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _ignoreKnownWebViewNullUrlCallbackError();
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
@@ -37,6 +41,35 @@ void main() async {
   await ConnectivityService.instance.init();
 
   runApp(const CyberRunnerApp());
+}
+
+void _ignoreKnownWebViewNullUrlCallbackError() {
+  final defaultFlutterErrorHandler = FlutterError.onError;
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (_isKnownWebViewNullUrlCallbackError(details.exception, details.stack)) {
+      debugPrint('WEBVIEW CALLBACK WARNING IGNORED: ${details.exception}');
+      return;
+    }
+
+    defaultFlutterErrorHandler?.call(details);
+  };
+
+  ui.PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+    if (_isKnownWebViewNullUrlCallbackError(error, stack)) {
+      debugPrint('WEBVIEW CALLBACK WARNING IGNORED: $error');
+      return true;
+    }
+
+    return false;
+  };
+}
+
+bool _isKnownWebViewNullUrlCallbackError(Object error, StackTrace? stack) {
+  final message = error.toString();
+  final stackText = stack.toString();
+  return message.contains('Null check operator used on a null value') &&
+      stackText.contains('webview_flutter_android') &&
+      stackText.contains('WebViewClient.pigeon_setUpMessageHandlers');
 }
 
 class CyberRunnerApp extends StatelessWidget {
@@ -134,7 +167,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     setState(() {});
   }
 
-  void _openBonusFromNotification(String? url) {
+  Future<void> _openBonusFromNotification(String? url) async {
     if (!mounted) {
       return;
     }
@@ -144,11 +177,16 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     }
 
     if (url != null && url.isNotEmpty) {
-      debugPrint('NOTIFICATION TAP -> WebView: $url');
+      final webViewUrl = await _urlWithSiteParams(url);
+      if (!mounted) {
+        return;
+      }
+
+      debugPrint('NOTIFICATION TAP -> WebView: $webViewUrl');
       setState(() {
         _showBonusNotification = false;
         _fallbackWebViewUrl = null;
-        _configWebViewUrl = url;
+        _configWebViewUrl = webViewUrl;
       });
       return;
     }
@@ -179,8 +217,9 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
         );
       } else if (launchMode == AppAttributionConfig.launchModeWebView &&
           storage.hasCachedUrl) {
+        final cachedUrl = await _urlWithSiteParams(storage.cachedUrl!);
         decision = ConfigLaunchDecision.webView(
-          storage.cachedUrl!,
+          cachedUrl!,
           reason: 'webview_mode_no_network_cached_url',
         );
       } else if (launchMode == AppAttributionConfig.launchModeGame) {
@@ -221,11 +260,12 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       FirebaseService.instance.consumePendingNotificationOpen();
       final oneShotUrl = FirebaseService.instance
           .consumePendingNotificationUrl();
+      final webViewUrl = await _urlWithSiteParams(oneShotUrl);
       setState(() {
         _showLoading = false;
         _showBonusNotification = false;
         _fallbackWebViewUrl = null;
-        _configWebViewUrl = oneShotUrl;
+        _configWebViewUrl = webViewUrl;
       });
       return;
     }
@@ -255,7 +295,9 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
         .consumePendingNotificationUrl();
     FirebaseService.instance.consumePendingNotificationOpen();
 
-    final webViewUrl = notificationUrl ?? _fallbackWebViewUrl;
+    final webViewUrl = await _urlWithSiteParams(
+      notificationUrl ?? _fallbackWebViewUrl,
+    );
 
     setState(() {
       _showBonusNotification = false;
@@ -275,6 +317,12 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   Future<void> _onBonusSkipped() async {
     await FirebaseService.instance.recordNotificationPromptSkipped();
     await _completeBonusFlow();
+  }
+
+  Future<String?> _urlWithSiteParams(String? url) {
+    return ConfigClient.instance.ensureRequiredDeepLinkParamsForCurrentInstall(
+      url,
+    );
   }
 
   void _exitConfigWebView() {

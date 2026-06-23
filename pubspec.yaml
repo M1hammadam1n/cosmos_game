@@ -28,6 +28,7 @@ dependencies:
   file_selector: ^1.0.3
   http: ^1.6.0
   package_info_plus: ^10.1.0
+  flutter_local_notifications: ^22.0.1
 
 dev_dependencies:
   flutter_test:

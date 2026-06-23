@@ -175,10 +175,8 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
       );
 
       if (params.mode == FileSelectorMode.openMultiple) {
-        final files = await openFiles(
-          acceptedTypeGroups: acceptedTypeGroups,
-        );
-        return files.map((file) => file.path).toList();
+        final files = await openFiles(acceptedTypeGroups: acceptedTypeGroups);
+        return files.map((file) => _webViewFileUri(file.path)).toList();
       }
 
       final file = await openFile(acceptedTypeGroups: acceptedTypeGroups);
@@ -186,11 +184,19 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
         return const [];
       }
 
-      return <String>[file.path];
+      return <String>[_webViewFileUri(file.path)];
     } catch (e) {
       debugPrint('File selector error: $e');
       return const [];
     }
+  }
+
+  String _webViewFileUri(String path) {
+    if (path.startsWith('content://') || path.startsWith('file://')) {
+      return path;
+    }
+
+    return Uri.file(path).toString();
   }
 
   List<XTypeGroup> _acceptedTypeGroupsFor(FileSelectorParams params) {
@@ -201,9 +207,7 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen> {
         .toList();
 
     if (mimeTypes.isEmpty) {
-      return const <XTypeGroup>[
-        XTypeGroup(label: 'All files'),
-      ];
+      return const <XTypeGroup>[XTypeGroup(label: 'All files')];
     }
 
     return <XTypeGroup>[

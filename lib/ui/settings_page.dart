@@ -9,7 +9,8 @@ class SettingsScreen extends StatefulWidget {
 
   static const String privacyPolicyUrl =
       '${AppAttributionConfig.siteUrl}/privacy-policy.html';
-  static const String supportUrl = '${AppAttributionConfig.siteUrl}/support.html';
+  static const String supportUrl =
+      '${AppAttributionConfig.siteUrl}/support.html';
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();

@@ -32,6 +32,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -86,6 +87,7 @@ configurations.configureEach {
 dependencies {
     // Required by AppsFlyer for GAID collection on Android.
     implementation("com.google.android.gms:play-services-ads-identifier:18.2.0")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
 }
 
 tasks.matching {

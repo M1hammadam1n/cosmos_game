@@ -65,26 +65,6 @@ class ConfigCoordinator {
 
     final storage = ConfigStorage.instance;
 
-    if (storage.configRequestsDisabled) {
-      if (storage.hasCachedUrl) {
-        final cachedUrl = ConfigClient.instance.ensureRequiredDeepLinkParams(
-          storage.cachedUrl!,
-        )!;
-        final decision = ConfigLaunchDecision.webView(
-          cachedUrl,
-          reason: 'config_disabled_cached_fallback',
-        );
-        _logLaunchDecision(decision);
-        return decision;
-      }
-
-      final decision = ConfigLaunchDecision.game(
-        reason: 'config_disabled_no_cache',
-      );
-      _logLaunchDecision(decision);
-      return decision;
-    }
-
     final cachedUrl = storage.cachedUrl;
     final response = await ConfigClient.instance.fetchConfig();
     if (response.isSuccess) {
@@ -110,7 +90,10 @@ class ConfigCoordinator {
 
     if (cachedUrl != null && cachedUrl.isNotEmpty) {
       final normalizedCachedUrl = ConfigClient.instance
-          .ensureRequiredDeepLinkParams(cachedUrl)!;
+          .ensureRequiredDeepLinkParams(
+            cachedUrl,
+            ConfigClient.instance.lastRequestBody,
+          )!;
       final decision = ConfigLaunchDecision.webView(
         normalizedCachedUrl,
         reason: 'config_api_failed_cached_fallback',
@@ -119,7 +102,6 @@ class ConfigCoordinator {
       return decision;
     }
 
-    await storage.setConfigRequestsDisabled(true);
     await storage.saveLaunchMode(AppAttributionConfig.launchModeGame);
     final decision = ConfigLaunchDecision.game(
       reason: 'config_api_failed_no_cache',
@@ -131,9 +113,6 @@ class ConfigCoordinator {
   /// Sends updated push token to config after user grants notification permission.
   Future<void> refreshConfigAfterPermission() async {
     final storage = ConfigStorage.instance;
-    if (storage.configRequestsDisabled) {
-      return;
-    }
 
     await FirebaseService.instance.ensurePushTokenForConfig();
 
@@ -159,10 +138,6 @@ class ConfigCoordinator {
   Future<void> _refreshConfigInBackground(String token) async {
     debugPrint('FIREBASE TOKEN REFRESH: $token');
     final storage = ConfigStorage.instance;
-
-    if (storage.configRequestsDisabled) {
-      return;
-    }
 
     try {
       final response = await ConfigClient.instance.fetchConfig();
