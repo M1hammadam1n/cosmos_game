@@ -169,10 +169,16 @@ class ConfigClient {
       query[entry.key] = List<String>.from(entry.value);
     }
 
-    var changed = false;
-    for (final entry in _siteQueryParams(source).entries) {
-      changed = _putIfMissingOrBlank(query, entry.key, entry.value) || changed;
-    }
+    final deepLinkValue =
+        _nonEmptyString(source['deep_link_value']) ??
+        AppAttributionConfig.defaultDeepLinkValue;
+    final deepLinkSub1 =
+        _nonEmptyString(source['deep_link_sub1']) ??
+        AppAttributionConfig.defaultDeepLinkSub1;
+
+    final changed =
+        _putIfMissingOrBlank(query, 'deep_link_value', deepLinkValue) |
+        _putIfMissingOrBlank(query, 'deep_link_sub1', deepLinkSub1);
 
     if (!changed) {
       return rawUrl;
@@ -181,18 +187,6 @@ class ConfigClient {
     final normalized = uri.replace(query: _encodedQueryString(query));
     debugPrint('CONFIG URL NORMALIZED: $normalized');
     return normalized.toString();
-  }
-
-  Future<String?> ensureRequiredDeepLinkParamsForCurrentInstall(
-    String? rawUrl,
-  ) async {
-    if (rawUrl == null || rawUrl.trim().isEmpty) {
-      return rawUrl;
-    }
-
-    final body = await _buildRequestBody();
-    _lastRequestBody = Map<String, dynamic>.from(body);
-    return ensureRequiredDeepLinkParams(rawUrl, body);
   }
 
   String _encodedQueryString(Map<String, List<String>> query) {
@@ -207,85 +201,20 @@ class ConfigClient {
         .join('&');
   }
 
-  Map<String, String> _siteQueryParams(Map<String, dynamic> source) {
-    final campaign = _firstValue(source, const [
-      'campaign',
-      'c',
-      'sub_id_1',
-    ], 'None');
-    final mediaSource = _firstValue(source, const [
-      'media_source',
-      'pid',
-      'sub_id_11',
-    ], 'None');
-    final agency = _firstValue(source, const ['agency'], '');
-    final campaignId = _firstValue(source, const [
-      'campaign_id',
-      'af_c_id',
-    ], '');
-    final afId = _firstValue(source, const ['af_id', 'sub_id_10'], '');
-
-    return <String, String>{
-      'sub_id_1': campaign,
-      'sub_id_2': _firstValue(source, const [
-        'siteid',
-        'af_siteid',
-        'sub_id_2',
-      ], ''),
-      'sub_id_3': _firstValue(source, const ['adset', 'sub_id_3'], ''),
-      'sub_id_4': _firstValue(source, const ['af_adset', 'sub_id_4'], ''),
-      'sub_id_5': _firstValue(source, const [
-        'bundle_id',
-        'store_id',
-        'sub_id_5',
-      ], AppAttributionConfig.androidPackageName),
-      'sub_id_7': _firstValue(source, const ['push_token', 'sub_id_7'], ''),
-      'sub_id_10': afId,
-      'sub_id_11': mediaSource,
-      'extra_param_2': _firstValue(source, const [
-        'af_sub1',
-        'extra_param_2',
-      ], ''),
-      'extra_param_3': _firstValue(source, const [
-        'af_sub2',
-        'extra_param_3',
-      ], ''),
-      'extra_param_4': _firstValue(source, const [
-        'af_sub3',
-        'extra_param_4',
-      ], ''),
-      'extra_param_5': _firstValue(source, const [
-        'af_sub4',
-        'extra_param_5',
-      ], ''),
-      'extra_param_6': _firstValue(source, const [
-        'af_sub5',
-        'extra_param_6',
-      ], ''),
-      'extra_param_8': _firstValue(source, const [
-        'adgroup',
-        'extra_param_8',
-      ], 'None'),
-      'extra_param_7':
-          'af_id=$afId&agency=$agency&campaign=$campaign'
-          '&campaign_id=$campaignId&media_source=$mediaSource',
-      'deep_link_value':
-          _nonEmptyString(source['deep_link_value']) ??
-          AppAttributionConfig.defaultDeepLinkValue,
-      'deep_link_sub1':
-          _nonEmptyString(source['deep_link_sub1']) ??
-          _firstNonEmptyDeepLinkSub(source) ??
-          AppAttributionConfig.defaultDeepLinkSub1,
-      '123': '',
-    };
-  }
-
   Future<Map<String, dynamic>> _buildRequestBody() async {
     final missingReasons = <String, String>{};
 
     // Conversion fields are copied unchanged from AppsFlyer payload.
-    final conversionData = await AppsFlyerService.instance
+    var conversionData = await AppsFlyerService.instance
         .waitForConversionData();
+    if (_shouldUseDebugTestAttribution(conversionData)) {
+      debugPrint(
+        'CONFIG DEBUG TEST ATTRIBUTION: using documented Non-organic payload',
+      );
+      conversionData = Map<String, dynamic>.from(
+        AppAttributionConfig.debugConfigTestAttribution,
+      );
+    }
     final body = Map<String, dynamic>.from(conversionData);
     debugPrint(
       'CONFIG APPSFLYER CONVERSION DATA:\n${_prettyJson(conversionData)}',
@@ -345,6 +274,21 @@ class ConfigClient {
       key: 'locale',
       value: localeValue,
       source: _clientParameterSources['locale']!,
+    );
+    _setRequiredValue(
+      body,
+      missingReasons,
+      key: 'deep_link_value',
+      value:
+          body['deep_link_value'] ?? AppAttributionConfig.defaultDeepLinkValue,
+      source: 'AppAttributionConfig.defaultDeepLinkValue',
+    );
+    _setRequiredValue(
+      body,
+      missingReasons,
+      key: 'deep_link_sub1',
+      value: body['deep_link_sub1'] ?? AppAttributionConfig.defaultDeepLinkSub1,
+      source: 'AppAttributionConfig.defaultDeepLinkSub1',
     );
 
     if (Platform.isIOS) {
@@ -444,13 +388,17 @@ class ConfigClient {
     _ensureAppsFlyerRequiredKeys(body, missingReasons);
     _logDeepLinkAvailability(body);
 
-    for (final entry in _siteQueryParams(body).entries) {
-      body.putIfAbsent(entry.key, () => entry.value);
-    }
-
     _logRequiredParameterStatus(body, missingReasons);
 
     return body;
+  }
+
+  bool _shouldUseDebugTestAttribution(Map<String, dynamic> conversionData) {
+    if (!kDebugMode || !AppAttributionConfig.enableDebugConfigTestAttribution) {
+      return false;
+    }
+
+    return _nonEmptyString(conversionData['af_status']) != 'Non-organic';
   }
 
   bool _putIfMissingOrBlank(
@@ -467,36 +415,6 @@ class ConfigClient {
 
     query[key] = <String>[value];
     return true;
-  }
-
-  String? _firstNonEmptyDeepLinkSub(Map<String, dynamic> source) {
-    for (final entry in source.entries) {
-      if (!entry.key.startsWith('deep_link_sub')) {
-        continue;
-      }
-
-      final value = _nonEmptyString(entry.value);
-      if (value != null) {
-        return value;
-      }
-    }
-
-    return null;
-  }
-
-  String _firstValue(
-    Map<String, dynamic> source,
-    List<String> keys,
-    String fallback,
-  ) {
-    for (final key in keys) {
-      final value = _nonEmptyString(source[key]);
-      if (value != null) {
-        return value;
-      }
-    }
-
-    return fallback;
   }
 
   void _ensureAppsFlyerRequiredKeys(

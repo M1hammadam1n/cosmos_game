@@ -33,6 +33,39 @@ class AppAttributionConfig {
   static const String defaultDeepLinkValue = 'deep_link_test';
   static const String defaultDeepLinkSub1 = 'deep_test_sub1';
 
+  /// Enables documented non-organic attribution payload for debug builds when
+  /// AppsFlyer does not return a non-organic conversion.
+  static const bool enableDebugConfigTestAttribution = true;
+
+  static const Map<String, Object?> debugConfigTestAttribution =
+      <String, Object?>{
+        'adset': 's1s3',
+        'af_adset': 'mm3',
+        'adgroup': 's1s3',
+        'campaign_id': '6068535534218',
+        'af_status': 'Non-organic',
+        'agency': 'Test',
+        'af_sub3': null,
+        'af_siteid': null,
+        'adset_id': '6073532011618',
+        'is_fb': true,
+        'is_first_launch': true,
+        'click_time': '2017-07-18 12:55:05',
+        'iscache': false,
+        'ad_id': '6074245540018',
+        'af_sub1': '439223',
+        'campaign': 'Comp_22_GRTRMiOS_111123212_US_iOS_GSLTS_wafb unlim access',
+        'is_paid': true,
+        'af_sub4': '01',
+        'adgroup_id': '6073532011418',
+        'is_mobile_data_terms_signed': true,
+        'af_channel': 'Facebook',
+        'af_sub5': null,
+        'media_source': 'Facebook Ads',
+        'install_time': '2017-07-19 08:06:56.189',
+        'af_sub2': null,
+      };
+
   /// Apple App Store numeric ID without the `id` prefix (iOS only).
   static const String iosAppStoreId = 'YOUR_APP_STORE_ID';
 

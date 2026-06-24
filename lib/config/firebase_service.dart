@@ -201,18 +201,18 @@ class FirebaseService {
       return false;
     }
 
-    final skippedAt = ConfigStorage.instance.notificationPromptSkippedAt;
-    if (skippedAt != null) {
-      final elapsed = DateTime.now().difference(skippedAt);
+    final deferredAt = ConfigStorage.instance.notificationPromptSkippedAt;
+    if (deferredAt != null) {
+      final elapsed = DateTime.now().difference(deferredAt);
       if (elapsed < AppAttributionConfig.notificationPromptRetryDelay) {
         debugPrint(
-          'NOTIFICATION PROMPT: hidden because last denial/skip was '
+          'NOTIFICATION PROMPT: hidden because last not-now/denial was '
           '${elapsed.inHours}h ago',
         );
         return false;
       }
       debugPrint(
-        'NOTIFICATION PROMPT: visible because last denial/skip was more than '
+        'NOTIFICATION PROMPT: visible because last not-now/denial was more than '
         '${AppAttributionConfig.notificationPromptRetryDelay.inDays} days ago',
       );
       return true;
@@ -228,7 +228,7 @@ class FirebaseService {
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
       debugPrint(
         'NOTIFICATION PROMPT: visible because permission is denied and no '
-        'local denial timestamp exists',
+        'local not-now/denial timestamp exists',
       );
       return true;
     }
@@ -280,7 +280,7 @@ class FirebaseService {
           'FIREBASE TOKEN (after permission): ${_pushToken ?? "(null)"}',
         );
       } else {
-        await recordNotificationPromptSkipped();
+        await recordNotificationPromptDeferred();
         debugPrint(
           'NOTIFICATION PROMPT: system permission was not granted; '
           'retry delayed for '
@@ -295,11 +295,11 @@ class FirebaseService {
     }
   }
 
-  Future<void> recordNotificationPromptSkipped() async {
+  Future<void> recordNotificationPromptDeferred() async {
     await ConfigStorage.instance.saveNotificationPromptSkippedAt(
       DateTime.now(),
     );
-    debugPrint('NOTIFICATION PROMPT: custom skip recorded');
+    debugPrint('NOTIFICATION PROMPT: not-now/denial recorded');
   }
 
   Future<void> _tryFetchToken({required String logLabel}) async {
@@ -365,8 +365,20 @@ class FirebaseService {
       },
     );
     await _createAndroidNotificationChannel(plugin);
+    await _handleLocalNotificationLaunch(plugin);
 
     _localNotificationsInitialized = true;
+  }
+
+  Future<void> _handleLocalNotificationLaunch(
+    FlutterLocalNotificationsPlugin plugin,
+  ) async {
+    final launchDetails = await plugin.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp != true) {
+      return;
+    }
+
+    _handleNotificationUrlPayload(launchDetails?.notificationResponse?.payload);
   }
 
   Future<void> _createAndroidNotificationChannel(

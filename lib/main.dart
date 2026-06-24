@@ -8,7 +8,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'config/app_attribution_config.dart';
-import 'config/config_client.dart';
 import 'config/config_coordinator.dart';
 import 'config/config_storage.dart';
 import 'config/firebase_background_handler.dart';
@@ -291,13 +290,13 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     });
   }
 
-  Future<void> _completeBonusFlow() async {
+  Future<void> _completeBonusFlow({String? preferredWebViewUrl}) async {
     final notificationUrl = FirebaseService.instance
         .consumePendingNotificationUrl();
     FirebaseService.instance.consumePendingNotificationOpen();
 
     final webViewUrl = await _urlWithSiteParams(
-      notificationUrl ?? _fallbackWebViewUrl,
+      notificationUrl ?? preferredWebViewUrl ?? _fallbackWebViewUrl,
     );
 
     setState(() {
@@ -317,8 +316,9 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     _bonusFlowInProgress = true;
     try {
       await FirebaseService.instance.requestNotificationPermission();
-      await ConfigCoordinator.instance.refreshConfigAfterPermission();
-      await _completeBonusFlow();
+      final refreshedUrl = await ConfigCoordinator.instance
+          .refreshConfigAfterPermission();
+      await _completeBonusFlow(preferredWebViewUrl: refreshedUrl);
     } finally {
       _bonusFlowInProgress = false;
     }
@@ -331,17 +331,15 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
 
     _bonusFlowInProgress = true;
     try {
-      await FirebaseService.instance.recordNotificationPromptSkipped();
+      await FirebaseService.instance.recordNotificationPromptDeferred();
       await _completeBonusFlow();
     } finally {
       _bonusFlowInProgress = false;
     }
   }
 
-  Future<String?> _urlWithSiteParams(String? url) {
-    return ConfigClient.instance.ensureRequiredDeepLinkParamsForCurrentInstall(
-      url,
-    );
+  Future<String?> _urlWithSiteParams(String? url) async {
+    return url;
   }
 
   void _exitConfigWebView() {

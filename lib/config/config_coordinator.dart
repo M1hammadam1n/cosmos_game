@@ -111,7 +111,7 @@ class ConfigCoordinator {
   }
 
   /// Sends updated push token to config after user grants notification permission.
-  Future<void> refreshConfigAfterPermission() async {
+  Future<String?> refreshConfigAfterPermission() async {
     final storage = ConfigStorage.instance;
 
     await FirebaseService.instance.ensurePushTokenForConfig();
@@ -124,15 +124,18 @@ class ConfigCoordinator {
           expires: response.expires ?? 0,
         );
         debugPrint('CONFIG REFRESH AFTER PERMISSION: url saved');
-      } else {
-        debugPrint(
-          'CONFIG REFRESH AFTER PERMISSION: failed '
-          'status=${response.statusCode} ok=${response.ok}',
-        );
+        return response.url;
       }
+
+      debugPrint(
+        'CONFIG REFRESH AFTER PERMISSION: failed '
+        'status=${response.statusCode} ok=${response.ok}',
+      );
     } catch (error) {
       debugPrint('CONFIG REFRESH AFTER PERMISSION failed: $error');
     }
+
+    return null;
   }
 
   Future<void> _refreshConfigInBackground(String token) async {
