@@ -5,6 +5,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,6 +19,9 @@ const String _androidNotificationChannelId = 'high_importance_channel_v2';
 const String _androidNotificationChannelName = 'High importance notifications';
 const String _androidNotificationChannelDescription =
     'Notifications with offers and app updates';
+const MethodChannel _notificationPermissionChannel = MethodChannel(
+  'space_chicken/notification_permission',
+);
 
 class FirebaseService {
   FirebaseService._();
@@ -262,6 +266,10 @@ class FirebaseService {
 
   Future<NotificationSettings?> _requestNotificationPermission() async {
     try {
+      final androidPermissionStatus = Platform.isAndroid
+          ? await _requestAndroidNotificationPermission()
+          : null;
+
       final settings = await FirebaseMessaging.instance.requestPermission(
         alert: true,
         badge: true,
@@ -270,11 +278,16 @@ class FirebaseService {
 
       debugPrint(
         'FCM PERMISSION REQUEST: auth=${settings.authorizationStatus.name} '
-        'alert=${settings.alert.name}',
+        'alert=${settings.alert.name} '
+        'android_runtime=${androidPermissionStatus ?? "(n/a)"}',
       );
 
-      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-          settings.authorizationStatus == AuthorizationStatus.provisional) {
+      final granted =
+          settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional ||
+          androidPermissionStatus == 'authorized';
+
+      if (granted) {
         await _tryFetchToken(logLabel: 'after_permission');
         debugPrint(
           'FIREBASE TOKEN (after permission): ${_pushToken ?? "(null)"}',
@@ -292,6 +305,22 @@ class FirebaseService {
     } catch (error) {
       debugPrint('FCM PERMISSION REQUEST failed: $error');
       return getNotificationSettings();
+    }
+  }
+
+  Future<String?> _requestAndroidNotificationPermission() async {
+    try {
+      final status = await _notificationPermissionChannel.invokeMethod<String>(
+        'request',
+      );
+      debugPrint('ANDROID NOTIFICATION PERMISSION REQUEST: $status');
+      return status;
+    } on MissingPluginException {
+      debugPrint('ANDROID NOTIFICATION PERMISSION REQUEST: bridge missing');
+      return null;
+    } catch (error) {
+      debugPrint('ANDROID NOTIFICATION PERMISSION REQUEST failed: $error');
+      return null;
     }
   }
 

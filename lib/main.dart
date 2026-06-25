@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'audio/game_audio_controller.dart';
 import 'config/app_attribution_config.dart';
+import 'config/config_client.dart';
 import 'config/config_coordinator.dart';
 import 'config/config_storage.dart';
 import 'config/firebase_background_handler.dart';
@@ -252,7 +253,10 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     }
 
     if (decision.target == ConfigLaunchTarget.webView) {
-      _fallbackWebViewUrl = decision.url;
+      _fallbackWebViewUrl = await _urlWithSiteParams(decision.url);
+      if (!mounted) {
+        return;
+      }
     }
 
     final notificationUrl = FirebaseService.instance.pendingNotificationUrl;
@@ -285,7 +289,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     setState(() {
       _showLoading = false;
       if (decision.target == ConfigLaunchTarget.webView) {
-        _configWebViewUrl = decision.url;
+        _configWebViewUrl = _fallbackWebViewUrl;
       }
     });
   }
@@ -339,7 +343,7 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
   }
 
   Future<String?> _urlWithSiteParams(String? url) async {
-    return url;
+    return ConfigClient.instance.appendRequiredSiteParams(url);
   }
 
   void _exitConfigWebView() {

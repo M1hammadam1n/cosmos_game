@@ -66,8 +66,26 @@ class ConfigCoordinator {
     final storage = ConfigStorage.instance;
 
     final cachedUrl = storage.cachedUrl;
+    if (storage.isWebViewMode && storage.isCachedUrlValid) {
+      final decision = ConfigLaunchDecision.webView(
+        cachedUrl!,
+        reason: 'cached_config_not_expired',
+      );
+      _logLaunchDecision(decision);
+      return decision;
+    }
+
+    if (storage.configRequestsDisabled && !storage.hasCachedUrl) {
+      final decision = ConfigLaunchDecision.game(
+        reason: 'config_requests_disabled_no_cache',
+      );
+      _logLaunchDecision(decision);
+      return decision;
+    }
+
     final response = await ConfigClient.instance.fetchConfig();
     if (response.isSuccess) {
+      await storage.setConfigRequestsDisabled(false);
       await storage.saveConfigUrl(
         url: response.url!,
         expires: response.expires ?? 0,
@@ -103,6 +121,7 @@ class ConfigCoordinator {
     }
 
     await storage.saveLaunchMode(AppAttributionConfig.launchModeGame);
+    await storage.setConfigRequestsDisabled(true);
     final decision = ConfigLaunchDecision.game(
       reason: 'config_api_failed_no_cache',
     );
@@ -113,12 +132,19 @@ class ConfigCoordinator {
   /// Sends updated push token to config after user grants notification permission.
   Future<String?> refreshConfigAfterPermission() async {
     final storage = ConfigStorage.instance;
+    if (storage.configRequestsDisabled && !storage.hasCachedUrl) {
+      debugPrint(
+        'CONFIG REFRESH AFTER PERMISSION: skipped because config requests are disabled',
+      );
+      return null;
+    }
 
     await FirebaseService.instance.ensurePushTokenForConfig();
 
     try {
       final response = await ConfigClient.instance.fetchConfig();
       if (response.isSuccess) {
+        await storage.setConfigRequestsDisabled(false);
         await storage.saveConfigUrl(
           url: response.url!,
           expires: response.expires ?? 0,
@@ -141,10 +167,17 @@ class ConfigCoordinator {
   Future<void> _refreshConfigInBackground(String token) async {
     debugPrint('FIREBASE TOKEN REFRESH: $token');
     final storage = ConfigStorage.instance;
+    if (storage.configRequestsDisabled && !storage.hasCachedUrl) {
+      debugPrint(
+        'BACKGROUND CONFIG REFRESH: skipped because config requests are disabled',
+      );
+      return;
+    }
 
     try {
       final response = await ConfigClient.instance.fetchConfig();
       if (response.isSuccess) {
+        await storage.setConfigRequestsDisabled(false);
         await storage.saveConfigUrl(
           url: response.url!,
           expires: response.expires ?? 0,

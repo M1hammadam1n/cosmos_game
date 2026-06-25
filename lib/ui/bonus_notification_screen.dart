@@ -107,13 +107,22 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                       await GameAudioController.instance.playButtonSound();
                       widget.onBonusPressed();
                     },
-                    child: Image.asset(
+                    width: isLandscape ? 465 : 280,
+                    height: isLandscape ? 54 : 58,
+                    background: Image.asset(
                       isLandscape
                           ? 'assets/images/Rectangle 4076_2.png'
                           : 'assets/images/Rectangle 4077.png',
-                      fit: BoxFit.contain,
-                      width: isLandscape ? 465 : 280,
-                      height: isLandscape ? 50 : 56,
+                      fit: BoxFit.fill,
+                    ),
+                    child: Text(
+                      'Yes, I Want Bonuses!',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.moul(
+                        color: const Color(0xFF2A1B00),
+                        fontSize: isLandscape ? 20 : 16,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
 
@@ -125,7 +134,7 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                       widget.onDismiss();
                     },
                     child: Text(
-                      'Not now',
+                      'Skip',
                       style: GoogleFonts.moul(
                         color: Colors.white54,
                         fontSize: isLandscape ? 30 : 25,
@@ -145,9 +154,18 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
 }
 
 class _BonusButton extends StatelessWidget {
-  const _BonusButton({required this.onPressed, this.child});
+  const _BonusButton({
+    required this.onPressed,
+    required this.width,
+    required this.height,
+    this.background,
+    this.child,
+  });
 
   final VoidCallback onPressed;
+  final double width;
+  final double height;
+  final Widget? background;
   final Widget? child;
 
   @override
@@ -158,18 +176,16 @@ class _BonusButton extends StatelessWidget {
         onTap: onPressed,
         borderRadius: BorderRadius.circular(18),
         child: SizedBox(
-          width: 280,
-          child:
-              child ??
-              Text(
-                'Bonus',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.moul(
-                  color: const Color(0xFF2A1B00),
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+          width: width,
+          height: height,
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              ?background,
+              Center(child: child),
+            ],
+          ),
         ),
       ),
     );

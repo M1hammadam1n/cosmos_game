@@ -24,6 +24,8 @@ class AppsFlyerService {
 
   Map<String, dynamic>? get deepLinkData => _deepLinkData;
 
+  bool get isInitialized => _sdk != null;
+
   bool get conversionFailed => _conversionFailed;
 
   Future<void> init() async {

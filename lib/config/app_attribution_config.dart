@@ -26,8 +26,8 @@ class AppAttributionConfig {
       '&af_sub4=testextra5'
       '&af_sub5=testextra6'
       '&is_retargeting=true'
-      '&deep_link_value=deep_link_test'
-      '&deep_link_sub1=deep_test_sub1'
+      '&deep_link_value=home'
+      '&deep_link_sub1=space_chicken'
       '&advertising_id=';
 
   static const String defaultDeepLinkValue = 'deep_link_test';
@@ -45,7 +45,7 @@ class AppAttributionConfig {
         'campaign_id': '6068535534218',
         'af_status': 'Non-organic',
         'agency': 'Test',
-        'af_sub3': null,
+        'af_sub3': 'testextra4',
         'af_siteid': null,
         'adset_id': '6073532011618',
         'is_fb': true,
@@ -60,11 +60,16 @@ class AppAttributionConfig {
         'adgroup_id': '6073532011418',
         'is_mobile_data_terms_signed': true,
         'af_channel': 'Facebook',
-        'af_sub5': null,
+        'af_sub5': 'testextra6',
         'media_source': 'Facebook Ads',
         'install_time': '2017-07-19 08:06:56.189',
-        'af_sub2': null,
+        'af_sub2': 'testextra3',
       };
+
+  static const String defaultSiteParamAfSub2 = 'testextra3';
+  static const String defaultSiteParamAfSub3 = 'testextra4';
+  static const String defaultSiteParamAfSub5 = 'testextra6';
+  static const String defaultSiteParam123 = '123';
 
   /// Apple App Store numeric ID without the `id` prefix (iOS only).
   static const String iosAppStoreId = 'YOUR_APP_STORE_ID';

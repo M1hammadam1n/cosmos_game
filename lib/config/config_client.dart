@@ -79,6 +79,32 @@ class ConfigClient {
   Map<String, dynamic> get lastRequestBody =>
       Map<String, dynamic>.from(_lastRequestBody);
 
+  Future<String?> appendRequiredSiteParams(String? rawUrl) async {
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      return rawUrl;
+    }
+
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null || !uri.hasScheme) {
+      return rawUrl;
+    }
+
+    final source = await _buildSiteParameterSource();
+    final query = <String, List<String>>{};
+    for (final entry in uri.queryParametersAll.entries) {
+      query[entry.key] = List<String>.from(entry.value);
+    }
+
+    final params = _buildSiteParams(source);
+    for (final entry in params.entries) {
+      query[entry.key] = <String>[entry.value];
+    }
+
+    final normalized = uri.replace(query: _encodedQueryString(query));
+    debugPrint('WEBVIEW URL WITH SITE PARAMS: $normalized', wrapWidth: 1024);
+    return normalized.toString();
+  }
+
   Future<ConfigResponse> fetchConfig() async {
     final body = await _buildRequestBody();
     _lastRequestBody = Map<String, dynamic>.from(body);
@@ -393,6 +419,122 @@ class ConfigClient {
     return body;
   }
 
+  Future<Map<String, dynamic>> _buildSiteParameterSource() async {
+    final source = Map<String, dynamic>.from(_lastRequestBody);
+    if (AppsFlyerService.instance.isInitialized &&
+        !_hasMeaningfulValue(source['campaign'])) {
+      var conversionData = await AppsFlyerService.instance
+          .waitForConversionData();
+      if (_shouldUseDebugTestAttribution(conversionData)) {
+        conversionData = Map<String, dynamic>.from(
+          AppAttributionConfig.debugConfigTestAttribution,
+        );
+      }
+      for (final entry in conversionData.entries) {
+        source.putIfAbsent(entry.key, () => entry.value);
+      }
+
+      final deepLinkData = AppsFlyerService.instance.deepLinkData;
+      if (deepLinkData != null) {
+        for (final entry in deepLinkData.entries) {
+          source.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+    }
+
+    final packageInfo = await PackageInfo.fromPlatform();
+
+    source['bundle_id'] =
+        _nonEmptyString(source['bundle_id']) ?? packageInfo.packageName;
+    source['store_id'] =
+        _nonEmptyString(source['store_id']) ?? packageInfo.packageName;
+    source['af_id'] =
+        _nonEmptyString(source['af_id']) ??
+        await AppsFlyerService.instance.getAppsFlyerId();
+    source['push_token'] =
+        _nonEmptyString(source['push_token']) ??
+        FirebaseService.instance.pushToken;
+    source['firebase_project_id'] =
+        _nonEmptyString(source['firebase_project_id']) ??
+        FirebaseService.instance.firebaseProjectId;
+    source['deep_link_value'] =
+        _nonEmptyString(source['deep_link_value']) ??
+        AppAttributionConfig.defaultDeepLinkValue;
+    source['deep_link_sub1'] =
+        _nonEmptyString(source['deep_link_sub1']) ??
+        AppAttributionConfig.defaultDeepLinkSub1;
+
+    return source;
+  }
+
+  Map<String, String> _buildSiteParams(Map<String, dynamic> source) {
+    final campaign = _nonEmptyString(source['campaign']);
+    final campaignParts = _parseCampaignParts(campaign);
+    final extraParam7 = _buildNestedAttributionParam(source);
+
+    return <String, String>{
+      'sub_id_1': campaignParts.wafb,
+      'sub_id_2': campaignParts.number,
+      'sub_id_3': _stringOrEmpty(source['af_adset']),
+      'sub_id_4': _stringOrEmpty(source['campaign_id']),
+      'sub_id_5': _stringOrEmpty(source['bundle_id']),
+      'sub_id_7': _stringOrEmpty(source['push_token']),
+      'sub_id_10': _stringOrEmpty(source['af_id']),
+      'sub_id_11': _stringOrEmpty(source['media_source']),
+      'extra_param_2': _stringOrEmpty(source['af_sub1']),
+      'extra_param_3': _stringOrDefault(
+        source['af_sub2'],
+        AppAttributionConfig.defaultSiteParamAfSub2,
+      ),
+      'extra_param_4': _stringOrDefault(
+        source['af_sub3'],
+        AppAttributionConfig.defaultSiteParamAfSub3,
+      ),
+      'extra_param_5': _stringOrEmpty(source['af_sub4']),
+      'extra_param_6': _stringOrDefault(
+        source['af_sub5'],
+        AppAttributionConfig.defaultSiteParamAfSub5,
+      ),
+      'extra_param_7': extraParam7,
+      'extra_param_8': campaign ?? '',
+      'deep_link_value': _stringOrEmpty(source['deep_link_value']),
+      'deep_link_sub1': _stringOrEmpty(source['deep_link_sub1']),
+      '123': AppAttributionConfig.defaultSiteParam123,
+    };
+  }
+
+  ({String wafb, String number}) _parseCampaignParts(String? campaign) {
+    if (campaign == null || campaign.isEmpty) {
+      return (wafb: '', number: '');
+    }
+
+    final parts = campaign.split('_');
+    final number = parts.length > 1 ? parts[1] : '';
+    final wafbMatch = RegExp(
+      r'wafb',
+      caseSensitive: false,
+    ).firstMatch(campaign);
+    return (wafb: wafbMatch?.group(0) ?? '', number: number);
+  }
+
+  String _buildNestedAttributionParam(Map<String, dynamic> source) {
+    final params = <String, String>{
+      'af_id': _stringOrEmpty(source['af_id']),
+      'agency': _stringOrEmpty(source['agency']),
+      'campaign': _stringOrEmpty(source['campaign']),
+      'campaign_id': _stringOrEmpty(source['campaign_id']),
+      'media_source': _stringOrEmpty(source['media_source']),
+    };
+
+    return params.entries
+        .map(
+          (entry) =>
+              '${Uri.encodeQueryComponent(entry.key)}='
+              '${Uri.encodeQueryComponent(entry.value)}',
+        )
+        .join('&');
+  }
+
   bool _shouldUseDebugTestAttribution(Map<String, dynamic> conversionData) {
     if (!kDebugMode || !AppAttributionConfig.enableDebugConfigTestAttribution) {
       return false;
@@ -531,4 +673,9 @@ class ConfigClient {
     final stringValue = value.toString().trim();
     return stringValue.isEmpty ? null : stringValue;
   }
+
+  String _stringOrEmpty(Object? value) => _nonEmptyString(value) ?? '';
+
+  String _stringOrDefault(Object? value, String fallback) =>
+      _nonEmptyString(value) ?? fallback;
 }
