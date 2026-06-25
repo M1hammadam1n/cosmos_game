@@ -109,21 +109,9 @@ class _BonusNotificationScreenState extends State<BonusNotificationScreen> {
                     },
                     width: isLandscape ? 465 : 280,
                     height: isLandscape ? 54 : 58,
-                    background: Image.asset(
-                      isLandscape
-                          ? 'assets/images/Rectangle 4076_2.png'
-                          : 'assets/images/Rectangle 4077.png',
-                      fit: BoxFit.fill,
-                    ),
-                    child: Text(
-                      'Yes, I Want Bonuses!',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.moul(
-                        color: const Color(0xFF2A1B00),
-                        fontSize: isLandscape ? 20 : 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
+                    imagePath: isLandscape
+                        ? 'assets/images/Rectangle 4076_2.png'
+                        : 'assets/images/Rectangle 4077.png',
                   ),
 
                   const SizedBox(height: 16),
@@ -158,15 +146,13 @@ class _BonusButton extends StatelessWidget {
     required this.onPressed,
     required this.width,
     required this.height,
-    this.background,
-    this.child,
+    required this.imagePath,
   });
 
   final VoidCallback onPressed;
   final double width;
   final double height;
-  final Widget? background;
-  final Widget? child;
+  final String imagePath;
 
   @override
   Widget build(BuildContext context) {
@@ -178,14 +164,7 @@ class _BonusButton extends StatelessWidget {
         child: SizedBox(
           width: width,
           height: height,
-          child: Stack(
-            fit: StackFit.expand,
-            alignment: Alignment.center,
-            children: [
-              ?background,
-              Center(child: child),
-            ],
-          ),
+          child: Image.asset(imagePath, fit: BoxFit.fill),
         ),
       ),
     );

@@ -167,12 +167,13 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
   void modifyScore(int value) {
     if (!_runIsActive) return;
 
-    _scoreModifier += value;
+    final nextScore = _scoreModifier + value;
+    _scoreModifier = math.max(0, nextScore);
 
     // ИЗМЕНЕНИЕ: Обновляем счет только на основе модификатора от ловли предметов
     stars.value = _scoreModifier;
 
-    if (stars.value < 0) {
+    if (nextScore < 0) {
       endRun();
     }
   }

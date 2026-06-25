@@ -4,6 +4,7 @@ class AppAttributionConfig {
 
   static const String siteUrl = 'https://spacechhicken.com';
   static const String configUrl = 'https://spacechhicken.com/config.php';
+  static const bool enableBackendWebView = false;
 
   /// AppsFlyer dev key from the dashboard (App Settings → Dev Key).
   static const String appsFlyerDevKey = 'zooKQ2tfTiuoS8f5rEtj7g';

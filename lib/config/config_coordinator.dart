@@ -65,6 +65,14 @@ class ConfigCoordinator {
 
     final storage = ConfigStorage.instance;
 
+    if (!AppAttributionConfig.enableBackendWebView) {
+      final decision = ConfigLaunchDecision.game(
+        reason: 'backend_webview_temporarily_disabled',
+      );
+      _logLaunchDecision(decision);
+      return decision;
+    }
+
     final cachedUrl = storage.cachedUrl;
     if (storage.isWebViewMode && storage.isCachedUrlValid) {
       final decision = ConfigLaunchDecision.webView(
@@ -131,6 +139,13 @@ class ConfigCoordinator {
 
   /// Sends updated push token to config after user grants notification permission.
   Future<String?> refreshConfigAfterPermission() async {
+    if (!AppAttributionConfig.enableBackendWebView) {
+      debugPrint(
+        'CONFIG REFRESH AFTER PERMISSION: skipped because backend WebView is disabled',
+      );
+      return null;
+    }
+
     final storage = ConfigStorage.instance;
     if (storage.configRequestsDisabled && !storage.hasCachedUrl) {
       debugPrint(
@@ -166,6 +181,13 @@ class ConfigCoordinator {
 
   Future<void> _refreshConfigInBackground(String token) async {
     debugPrint('FIREBASE TOKEN REFRESH: $token');
+    if (!AppAttributionConfig.enableBackendWebView) {
+      debugPrint(
+        'BACKGROUND CONFIG REFRESH: skipped because backend WebView is disabled',
+      );
+      return;
+    }
+
     final storage = ConfigStorage.instance;
     if (storage.configRequestsDisabled && !storage.hasCachedUrl) {
       debugPrint(
