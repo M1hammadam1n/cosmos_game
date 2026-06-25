@@ -21,7 +21,7 @@ class MainActivity : FlutterActivity() {
     private val linksChannel = "space_chicken/links"
     private val systemUiChannel = "space_chicken/system_ui"
     private val notificationPermissionChannel = "space_chicken/notification_permission"
-    private val fcmNotificationChannelId = "high_importance_channel_v2"
+    private val fcmNotificationChannelId = "high_importance_channel_v3"
     private val notificationPermissionRequestCode = 41033
     private var pendingNotificationPermissionResult: MethodChannel.Result? = null
 

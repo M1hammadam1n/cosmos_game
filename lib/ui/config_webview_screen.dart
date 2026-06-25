@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -50,6 +51,10 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
 
   @override
   void dispose() {
+    final controller = _controller;
+    if (controller != null) {
+      unawaited(_cleanupWebViewStorage(controller, clearLocalStorage: true));
+    }
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -61,6 +66,13 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
         SystemUiMode.manual,
         overlays: SystemUiOverlay.values,
       );
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      final controller = _controller;
+      if (controller != null) {
+        unawaited(_cleanupWebViewStorage(controller));
+      }
     }
   }
 
@@ -68,6 +80,8 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
     final controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black);
+
+    await _cleanupWebViewStorage(controller, clearLocalStorage: true);
 
     String? userAgent;
 
@@ -99,6 +113,8 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
         },
         onPageFinished: (_) {
           if (!mounted) return;
+
+          unawaited(_cleanupWebViewStorage(controller));
 
           setState(() {
             _isLoading = false;
@@ -152,6 +168,20 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
     setState(() {
       _controller = controller;
     });
+  }
+
+  Future<void> _cleanupWebViewStorage(
+    WebViewController controller, {
+    bool clearLocalStorage = false,
+  }) async {
+    try {
+      await controller.clearCache();
+      if (clearLocalStorage) {
+        await controller.clearLocalStorage();
+      }
+    } catch (error) {
+      debugPrint('WEBVIEW STORAGE CLEANUP failed: $error');
+    }
   }
 
   Future<void> _openExternal(Uri uri) async {

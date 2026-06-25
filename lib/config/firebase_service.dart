@@ -15,7 +15,7 @@ import 'config_storage.dart';
 typedef PushTokenRefreshCallback = Future<void> Function(String token);
 typedef NotificationOpenCallback = void Function(String? url);
 
-const String _androidNotificationChannelId = 'high_importance_channel_v2';
+const String _androidNotificationChannelId = 'high_importance_channel_v3';
 const String _androidNotificationChannelName = 'High importance notifications';
 const String _androidNotificationChannelDescription =
     'Notifications with offers and app updates';
@@ -33,6 +33,8 @@ class FirebaseService {
   String? _pushToken;
   bool _pendingNotificationOpen = false;
   String? _pendingNotificationUrl;
+  final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   PushTokenRefreshCallback? _onTokenRefresh;
   NotificationOpenCallback? _onNotificationOpen;
   Future<NotificationSettings?>? _notificationPermissionRequest;
@@ -108,6 +110,7 @@ class FirebaseService {
       await _initAnalytics();
       _logFirebaseProjectValidation();
       await _initLocalNotifications();
+      await _ensureAndroidNotificationsEnabledForDisplay();
       await _configureForegroundPresentation();
 
       await _tryFetchToken(logLabel: 'init');
@@ -377,7 +380,6 @@ class FirebaseService {
       return;
     }
 
-    final plugin = FlutterLocalNotificationsPlugin();
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('ic_notification'),
       iOS: DarwinInitializationSettings(
@@ -387,14 +389,14 @@ class FirebaseService {
       ),
     );
 
-    await plugin.initialize(
+    await _localNotificationsPlugin.initialize(
       settings: settings,
       onDidReceiveNotificationResponse: (details) {
         _handleNotificationUrlPayload(details.payload);
       },
     );
-    await _createAndroidNotificationChannel(plugin);
-    await _handleLocalNotificationLaunch(plugin);
+    await _createAndroidNotificationChannel(_localNotificationsPlugin);
+    await _handleLocalNotificationLaunch(_localNotificationsPlugin);
 
     _localNotificationsInitialized = true;
   }
@@ -439,6 +441,44 @@ class FirebaseService {
     );
   }
 
+  Future<bool> _ensureAndroidNotificationsEnabledForDisplay() async {
+    if (!Platform.isAndroid) {
+      return true;
+    }
+
+    final androidPlugin = _localNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (androidPlugin == null) {
+      debugPrint('FIREBASE NOTIFICATION PERMISSION: Android plugin is null');
+      return false;
+    }
+
+    final enabledBefore = await androidPlugin.areNotificationsEnabled();
+    if (enabledBefore == true) {
+      debugPrint('FIREBASE NOTIFICATION PERMISSION: enabled');
+      return true;
+    }
+
+    debugPrint('FIREBASE NOTIFICATION PERMISSION: disabled, requesting');
+    final nativeStatus = await _requestAndroidNotificationPermission();
+    final pluginGranted = nativeStatus == 'authorized'
+        ? true
+        : await androidPlugin.requestNotificationsPermission();
+    final enabledAfter = await androidPlugin.areNotificationsEnabled();
+    final canShow =
+        nativeStatus == 'authorized' ||
+        pluginGranted == true ||
+        enabledAfter == true;
+
+    debugPrint(
+      'FIREBASE NOTIFICATION PERMISSION: native=$nativeStatus '
+      'plugin=$pluginGranted enabled=$enabledAfter canShow=$canShow',
+    );
+    return canShow;
+  }
+
   Future<void> _showForegroundNotification(RemoteMessage message) async {
     debugPrint("Notification keldi");
     if (!Platform.isAndroid) {
@@ -447,6 +487,14 @@ class FirebaseService {
 
     try {
       await _initLocalNotifications();
+      final canShow = await _ensureAndroidNotificationsEnabledForDisplay();
+      if (!canShow) {
+        debugPrint(
+          'FIREBASE FOREGROUND NOTIFICATION BLOCKED: notification permission '
+          'is disabled',
+        );
+        return;
+      }
 
       final notification = message.notification;
       final title = notification?.title ?? message.data['title'] as String?;
@@ -472,7 +520,7 @@ class FirebaseService {
         visibility: NotificationVisibility.public,
       );
 
-      await FlutterLocalNotificationsPlugin().show(
+      await _localNotificationsPlugin.show(
         id: message.messageId?.hashCode ?? Random().nextInt(1 << 31),
         title: title ?? 'Egg Escape',
         body: body ?? '',

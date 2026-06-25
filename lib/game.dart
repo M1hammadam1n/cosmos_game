@@ -248,7 +248,7 @@ class CyberRunnerGame extends FlameGame with HasCollisionDetection {
           lane: lane,
           position: position,
           size: obstacleSize,
-          scoreChange: 12,
+          scoreChange: 555,
         ),
       );
     }

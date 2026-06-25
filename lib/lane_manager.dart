@@ -15,11 +15,15 @@ class LaneManager {
   void resize(Vector2 gameSize) {
     // The road fills the screen vertically; the player still stays above
     // the touch controls so the bottom of the game area is not black.
-    final controlInset = math.max(108.0, gameSize.y * 0.14);
+    final isLandscape = gameSize.x > gameSize.y;
+    final controlInset = isLandscape
+        ? math.max(70.0, gameSize.y * 0.16)
+        : math.max(108.0, gameSize.y * 0.14);
 
     roadRect = Rect.fromLTWH(0, 0, gameSize.x, math.max(1, gameSize.y));
     laneWidth = roadRect.width / laneCount;
-    _playerStartY = gameSize.y - controlInset - laneWidth * 1.05;
+    final playerHalfHeight = normalizedCarWidth() * 1.72 * 0.7;
+    _playerStartY = gameSize.y - controlInset - playerHalfHeight;
   }
 
   double laneCenterX(int lane) {
@@ -31,11 +35,13 @@ class LaneManager {
   }
 
   double normalizedCarWidth() {
-    return math.min(laneWidth * 0.58, 76);
+    final heightLimit = roadRect.height * 0.18 / 1.72;
+    return math.min(math.min(laneWidth * 0.58, heightLimit), 76);
   }
 
   double normalizedObstacleWidth() {
-    return math.min(laneWidth * 0.68, 86);
+    final heightLimit = roadRect.height * 0.16 / 1.18;
+    return math.min(math.min(laneWidth * 0.68, heightLimit), 86);
   }
 
   int clampLane(int lane) {

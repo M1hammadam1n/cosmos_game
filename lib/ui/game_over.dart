@@ -14,11 +14,16 @@ class GameOverOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        color: const Color(0xFF3A0B0B),
         image: DecorationImage(
-          image: AssetImage('assets/images/Background_game_over.png'),
-          fit: BoxFit.cover,
+          image: const AssetImage('assets/images/Background_game_over.png'),
+          fit: isLandscape ? BoxFit.contain : BoxFit.cover,
+          alignment: Alignment.center,
         ),
       ),
       child: SafeArea(
@@ -39,7 +44,7 @@ class GameOverOverlay extends StatelessWidget {
             );
             final contentWidth = math.min(
               isTablet ? 620.0 : 560.0,
-              availableWidth * (isLandscape ? 0.68 : 0.92),
+              availableWidth * 0.92,
             );
 
             return Padding(
@@ -51,25 +56,123 @@ class GameOverOverlay extends StatelessWidget {
                 child: SizedBox(
                   width: availableWidth,
                   height: availableHeight,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SizedBox(
-                      width: contentWidth,
-                      child: _GameOverPanel(
-                        contentWidth: contentWidth,
-                        score: game.stars.value,
-                        best: game.bestStars.value,
-                        onRestart: game.restart,
-                        onMenu: game.onExitToMenu,
-                      ),
-                    ),
-                  ),
+                  child: isLandscape
+                      ? _GameOverLandscapePanel(
+                          availableWidth: availableWidth,
+                          availableHeight: availableHeight,
+                          score: game.stars.value,
+                          best: game.bestStars.value,
+                          onRestart: game.restart,
+                          onMenu: game.onExitToMenu,
+                        )
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: contentWidth,
+                            child: _GameOverPanel(
+                              contentWidth: contentWidth,
+                              score: game.stars.value,
+                              best: game.bestStars.value,
+                              onRestart: game.restart,
+                              onMenu: game.onExitToMenu,
+                            ),
+                          ),
+                        ),
                 ),
               ),
             );
           },
         ),
       ),
+    );
+  }
+}
+
+class _GameOverLandscapePanel extends StatelessWidget {
+  const _GameOverLandscapePanel({
+    required this.availableWidth,
+    required this.availableHeight,
+    required this.score,
+    required this.best,
+    required this.onRestart,
+    required this.onMenu,
+  });
+
+  final double availableWidth;
+  final double availableHeight;
+  final int score;
+  final int best;
+  final Future<void> Function() onRestart;
+  final Future<void> Function() onMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = (availableWidth * 0.05).clamp(28.0, 56.0).toDouble();
+    final buttonWidth = math
+        .min(availableWidth * 0.34, availableHeight * 1.65)
+        .clamp(260.0, 420.0)
+        .toDouble();
+    final resultWidth = math.max(260.0, availableWidth - buttonWidth - gap);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: resultWidth,
+          height: availableHeight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: math.min(resultWidth, 520.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/game_over.png',
+                    width: math.min(resultWidth, 500.0),
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
+                  _ScoreBox(
+                    contentMaxWidth: math.min(resultWidth, 520.0),
+                    score: score,
+                    best: best,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: gap),
+        SizedBox(
+          width: buttonWidth,
+          height: availableHeight,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: buttonWidth,
+                  child: _ImageButton(
+                    imagePath: 'assets/images/start_again.png',
+                    label: 'Start again',
+                    onPressed: onRestart,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: buttonWidth,
+                  child: _ImageButton(
+                    imagePath: 'assets/images/back_to_menu.png',
+                    label: 'Back to menu',
+                    onPressed: onMenu,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

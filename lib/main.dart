@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flame/game.dart';
@@ -144,6 +145,11 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_configWebViewUrl != null) {
+      unawaited(GameAudioController.instance.stopMusic());
+      return;
+    }
+
     GameAudioController.instance.handleAppLifecycleChange(state);
   }
 
@@ -177,17 +183,31 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       return;
     }
 
+    if (!AppAttributionConfig.enableBackendWebView) {
+      debugPrint(
+        'NOTIFICATION TAP: ignored because backend WebView is disabled',
+      );
+      FirebaseService.instance.consumePendingNotificationOpen();
+      FirebaseService.instance.consumePendingNotificationUrl();
+      setState(() {
+        _showBonusNotification = false;
+        _fallbackWebViewUrl = null;
+        _configWebViewUrl = null;
+      });
+      return;
+    }
+
     if (url != null && url.isNotEmpty) {
       final webViewUrl = await _urlWithSiteParams(url);
       if (!mounted) {
         return;
       }
 
-      debugPrint('NOTIFICATION TAP -> WebView: $webViewUrl');
+      debugPrint('NOTIFICATION TAP -> Bonus screen: $webViewUrl');
       setState(() {
-        _showBonusNotification = false;
-        _fallbackWebViewUrl = null;
-        _configWebViewUrl = webViewUrl;
+        _showBonusNotification = true;
+        _fallbackWebViewUrl = webViewUrl;
+        _configWebViewUrl = null;
       });
       return;
     }
@@ -217,7 +237,8 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
           reason: 'first_launch_no_network',
         );
       } else if (launchMode == AppAttributionConfig.launchModeWebView &&
-          storage.hasCachedUrl) {
+          storage.hasCachedUrl &&
+          AppAttributionConfig.enableBackendWebView) {
         final cachedUrl = await _urlWithSiteParams(storage.cachedUrl!);
         decision = ConfigLaunchDecision.webView(
           cachedUrl!,
@@ -264,18 +285,31 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
       FirebaseService.instance.consumePendingNotificationOpen();
       final oneShotUrl = FirebaseService.instance
           .consumePendingNotificationUrl();
+      if (!AppAttributionConfig.enableBackendWebView) {
+        debugPrint(
+          'PENDING NOTIFICATION URL ignored because backend WebView is disabled',
+        );
+        setState(() {
+          _showLoading = false;
+          _showBonusNotification = false;
+          _fallbackWebViewUrl = null;
+          _configWebViewUrl = null;
+        });
+        return;
+      }
+
       final webViewUrl = await _urlWithSiteParams(oneShotUrl);
       setState(() {
         _showLoading = false;
-        _showBonusNotification = false;
-        _fallbackWebViewUrl = null;
-        _configWebViewUrl = webViewUrl;
+        _showBonusNotification = true;
+        _fallbackWebViewUrl = webViewUrl;
+        _configWebViewUrl = null;
       });
       return;
     }
 
     final showPrompt =
-        decision.target != ConfigLaunchTarget.offline &&
+        decision.target == ConfigLaunchTarget.webView &&
         await FirebaseService.instance.shouldShowNotificationPrompt();
 
     if (showPrompt) {
@@ -284,6 +318,13 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
         _showBonusNotification = true;
       });
       return;
+    }
+
+    if (decision.target == ConfigLaunchTarget.webView) {
+      await _prepareForConfigWebView();
+      if (!mounted) {
+        return;
+      }
     }
 
     setState(() {
@@ -299,9 +340,25 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
         .consumePendingNotificationUrl();
     FirebaseService.instance.consumePendingNotificationOpen();
 
+    if (!AppAttributionConfig.enableBackendWebView) {
+      setState(() {
+        _showBonusNotification = false;
+        _fallbackWebViewUrl = null;
+        _configWebViewUrl = null;
+      });
+      return;
+    }
+
     final webViewUrl = await _urlWithSiteParams(
       notificationUrl ?? preferredWebViewUrl ?? _fallbackWebViewUrl,
     );
+
+    if (webViewUrl != null && webViewUrl.isNotEmpty) {
+      await _prepareForConfigWebView();
+      if (!mounted) {
+        return;
+      }
+    }
 
     setState(() {
       _showBonusNotification = false;
@@ -344,6 +401,10 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
 
   Future<String?> _urlWithSiteParams(String? url) async {
     return ConfigClient.instance.appendRequiredSiteParams(url);
+  }
+
+  Future<void> _prepareForConfigWebView() async {
+    await GameAudioController.instance.stopMusic();
   }
 
   void _exitConfigWebView() {

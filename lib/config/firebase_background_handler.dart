@@ -6,7 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 
-const String _androidNotificationChannelId = 'high_importance_channel_v2';
+const String _androidNotificationChannelId = 'high_importance_channel_v3';
 const String _androidNotificationChannelName = 'High importance notifications';
 const String _androidNotificationChannelDescription =
     'Notifications with offers and app updates';

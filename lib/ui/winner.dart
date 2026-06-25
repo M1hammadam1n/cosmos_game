@@ -14,74 +14,239 @@ class WinnerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Вычисляем адаптивный отступ (25% от высоты экрана)
-    final double topPadding = MediaQuery.of(context).size.height * 0.25;
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double contentMaxWidth = math.min(600.0, screenWidth * 0.85);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
+        color: Colors.black,
         image: DecorationImage(
-          image: AssetImage('assets/images/winner_banner.png'),
-          fit: BoxFit.cover,
+          image: const AssetImage('assets/images/winner_banner.png'),
+          fit: isLandscape ? BoxFit.cover : BoxFit.cover,
+          alignment: Alignment.center,
         ),
       ),
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: contentMaxWidth),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  // Адаптивный отступ сверху
-                  SizedBox(height: topPadding),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final shortestSide = MediaQuery.sizeOf(context).shortestSide;
+            final isTablet = shortestSide >= 600;
+            final isLandscape = constraints.maxWidth > constraints.maxHeight;
+            final horizontalPadding = isTablet ? 40.0 : 22.0;
+            final verticalPadding = isLandscape ? 8.0 : 18.0;
+            final availableWidth = math.max(
+              0.0,
+              constraints.maxWidth - horizontalPadding * 2,
+            );
+            final availableHeight = math.max(
+              0.0,
+              constraints.maxHeight - verticalPadding * 2,
+            );
+            final contentWidth = math.min(
+              isTablet ? 620.0 : 560.0,
+              availableWidth * 0.9,
+            );
 
-                  Center(
-                    child: Image.asset(
-                      'assets/images/winner.png',
-                      width: double.infinity,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _WinnerScoreBox(
-                    score: game.stars.value,
-                    best: game.bestStars.value,
-                  ),
-                  const SizedBox(height: 14),
-                  _WinnerImageButton(
-                    imagePath: 'assets/images/start_again.png',
-                    label: 'Start again',
-                    onPressed: game.restart,
-                  ),
-                  const SizedBox(height: 10),
-                  _WinnerImageButton(
-                    imagePath: 'assets/images/back_to_menu.png',
-                    label: 'Back to menu',
-                    onPressed: game.onExitToMenu,
-                  ),
-                ],
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
               ),
-            ),
-          ),
+              child: Center(
+                child: SizedBox(
+                  width: availableWidth,
+                  height: availableHeight,
+                  child: isLandscape
+                      ? _WinnerLandscapePanel(
+                          availableWidth: availableWidth,
+                          availableHeight: availableHeight,
+                          score: game.stars.value,
+                          best: game.bestStars.value,
+                          onRestart: game.restart,
+                          onMenu: game.onExitToMenu,
+                        )
+                      : FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: contentWidth,
+                            child: _WinnerPanel(
+                              contentWidth: contentWidth,
+                              score: game.stars.value,
+                              best: game.bestStars.value,
+                              onRestart: game.restart,
+                              onMenu: game.onExitToMenu,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _WinnerScoreBox extends StatelessWidget {
-  const _WinnerScoreBox({required this.score, required this.best});
+class _WinnerLandscapePanel extends StatelessWidget {
+  const _WinnerLandscapePanel({
+    required this.availableWidth,
+    required this.availableHeight,
+    required this.score,
+    required this.best,
+    required this.onRestart,
+    required this.onMenu,
+  });
 
+  final double availableWidth;
+  final double availableHeight;
+  final int score;
+  final int best;
+  final Future<void> Function() onRestart;
+  final Future<void> Function() onMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = (availableWidth * 0.05).clamp(28.0, 56.0).toDouble();
+    final buttonWidth = math
+        .min(availableWidth * 0.34, availableHeight * 1.65)
+        .clamp(300.0, 420.0)
+        .toDouble();
+    final resultWidth = math.max(260.0, availableWidth - buttonWidth - gap);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: resultWidth,
+          height: availableHeight,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: math.min(resultWidth, 520.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/winner.png',
+                    width: math.min(resultWidth, 500.0),
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(height: 10),
+                  _WinnerScoreBox(
+                    contentMaxWidth: math.min(resultWidth, 520.0),
+                    score: score,
+                    best: best,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: gap),
+        SizedBox(
+          width: buttonWidth,
+          height: availableHeight,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: buttonWidth,
+                  child: _WinnerImageButton(
+                    imagePath: 'assets/images/start_again.png',
+                    label: 'Start again',
+                    onPressed: onRestart,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: buttonWidth,
+                  child: _WinnerImageButton(
+                    imagePath: 'assets/images/back_to_menu.png',
+                    label: 'Back to menu',
+                    onPressed: onMenu,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WinnerPanel extends StatelessWidget {
+  const _WinnerPanel({
+    required this.contentWidth,
+    required this.score,
+    required this.best,
+    required this.onRestart,
+    required this.onMenu,
+  });
+
+  final double contentWidth;
+  final int score;
+  final int best;
+  final Future<void> Function() onRestart;
+  final Future<void> Function() onMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final titleWidth = math.min(contentWidth, 520.0);
+    final buttonWidth = math.min(contentWidth * 0.68, 320.0);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Image.asset(
+          'assets/images/winner.png',
+          width: titleWidth,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 10),
+        _WinnerScoreBox(
+          contentMaxWidth: contentWidth,
+          score: score,
+          best: best,
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: buttonWidth,
+          child: _WinnerImageButton(
+            imagePath: 'assets/images/start_again.png',
+            label: 'Start again',
+            onPressed: onRestart,
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          width: buttonWidth,
+          child: _WinnerImageButton(
+            imagePath: 'assets/images/back_to_menu.png',
+            label: 'Back to menu',
+            onPressed: onMenu,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WinnerScoreBox extends StatelessWidget {
+  const _WinnerScoreBox({
+    required this.contentMaxWidth,
+    required this.score,
+    required this.best,
+  });
+
+  final double contentMaxWidth;
   final int score;
   final int best;
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double contentMaxWidth = math.min(600.0, screenWidth * 0.85);
     final double boxWidth = math.min(contentMaxWidth * 0.8, 420.0);
 
     return SizedBox(
