@@ -430,6 +430,14 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     });
   }
 
+  Future<void> _handleGameBack(bool didPop, Object? result) async {
+    if (didPop || _game == null) {
+      return;
+    }
+
+    await _exitToMenu();
+  }
+
   Future<void> _handleOfflineBack() async {
     await GameAudioController.instance.playButtonSound();
     if (!mounted) {
@@ -459,21 +467,26 @@ class _GameShellState extends State<_GameShell> with WidgetsBindingObserver {
     final game = _game;
 
     if (game != null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFF050713),
-        body: SafeArea(
-          top: false,
-          bottom: false,
-          child: GameWidget<CyberRunnerGame>(
-            game: game,
-            initialActiveOverlays: const <String>[GameHud.overlayId],
-            overlayBuilderMap: <String, OverlayWidgetBuilder<CyberRunnerGame>>{
-              GameHud.overlayId: (context, game) => GameHud(game: game),
-              GameOverOverlay.overlayId: (context, game) =>
-                  GameOverOverlay(game: game),
-              WinnerOverlay.overlayId: (context, game) =>
-                  WinnerOverlay(game: game),
-            },
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: _handleGameBack,
+        child: Scaffold(
+          backgroundColor: const Color(0xFF050713),
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: GameWidget<CyberRunnerGame>(
+              game: game,
+              initialActiveOverlays: const <String>[GameHud.overlayId],
+              overlayBuilderMap:
+                  <String, OverlayWidgetBuilder<CyberRunnerGame>>{
+                    GameHud.overlayId: (context, game) => GameHud(game: game),
+                    GameOverOverlay.overlayId: (context, game) =>
+                        GameOverOverlay(game: game),
+                    WinnerOverlay.overlayId: (context, game) =>
+                        WinnerOverlay(game: game),
+                  },
+            ),
           ),
         ),
       );

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../audio/game_audio_controller.dart';
 import '../config/app_attribution_config.dart';
 import '../external_link_launcher.dart';
+import 'support_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -66,6 +67,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('Could not open link: $url')));
     }
+  }
+
+  Future<void> _openSupport() async {
+    await GameAudioController.instance.playButtonSound();
+    if (!mounted) return;
+
+    await Navigator.of(context).push(
+      PageRouteBuilder<void>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            const SupportScreen(url: SettingsScreen.supportUrl),
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+      ),
+    );
   }
 
   @override
@@ -134,9 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   onPrivacyTap: () => _openExternalLink(
                                     SettingsScreen.privacyPolicyUrl,
                                   ),
-                                  onSupportTap: () => _openExternalLink(
-                                    SettingsScreen.supportUrl,
-                                  ),
+                                  onSupportTap: _openSupport,
                                 ),
                               ),
                               Positioned(

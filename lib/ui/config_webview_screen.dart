@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../external_link_launcher.dart';
+import '../system_ui_config.dart';
 
 class ConfigWebViewScreen extends StatefulWidget {
   const ConfigWebViewScreen({
@@ -34,17 +34,7 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
 
     WidgetsBinding.instance.addObserver(this);
 
-    SystemChrome.setEnabledSystemUIMode(
-      SystemUiMode.manual,
-      overlays: SystemUiOverlay.values,
-    );
-
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
-        systemNavigationBarColor: Colors.black,
-      ),
-    );
+    unawaited(configureWebViewSystemUi());
 
     _initWebView();
   }
@@ -56,16 +46,14 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
       unawaited(_cleanupWebViewStorage(controller, clearLocalStorage: true));
     }
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(configureImmersiveSystemUi());
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      SystemChrome.setEnabledSystemUIMode(
-        SystemUiMode.manual,
-        overlays: SystemUiOverlay.values,
-      );
+      unawaited(configureWebViewSystemUi());
     } else if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
@@ -111,7 +99,10 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
             _isLoading = true;
           });
         },
-        onPageFinished: (_) {
+        onPageFinished: (_) async {
+          if (!mounted) return;
+
+          await _applyOfferLayoutFix(controller);
           if (!mounted) return;
 
           unawaited(_cleanupWebViewStorage(controller));
@@ -184,6 +175,96 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
     }
   }
 
+  Future<void> _applyOfferLayoutFix(WebViewController controller) async {
+    try {
+      await controller.runJavaScript(r'''
+        (function () {
+          var viewport = document.querySelector('meta[name="viewport"]');
+          if (!viewport) {
+            viewport = document.createElement('meta');
+            viewport.name = 'viewport';
+            document.head.appendChild(viewport);
+          }
+          viewport.content = 'width=device-width, initial-scale=1, viewport-fit=cover';
+
+          var style = document.getElementById('app-webview-landscape-form-fix');
+          if (!style) {
+            style = document.createElement('style');
+            style.id = 'app-webview-landscape-form-fix';
+            document.head.appendChild(style);
+          }
+
+          style.textContent = [
+            'html, body {',
+            '  max-width: 100%;',
+            '  overflow-x: hidden !important;',
+            '  -webkit-text-size-adjust: 100%;',
+            '}',
+            'input, select, textarea, button {',
+            '  box-sizing: border-box;',
+            '  max-width: 100%;',
+            '  scroll-margin-top: 24px;',
+            '  scroll-margin-bottom: 120px;',
+            '}',
+            '@media (orientation: landscape) and (max-height: 520px) {',
+            '  html, body {',
+            '    height: auto !important;',
+            '    min-height: 100% !important;',
+            '    overflow-y: auto !important;',
+            '    overscroll-behavior-y: contain;',
+            '    -webkit-overflow-scrolling: touch;',
+            '  }',
+            '  body {',
+            '    padding-bottom: max(24px, env(safe-area-inset-bottom)) !important;',
+            '  }',
+            '  form, [class*="form" i], [id*="form" i],',
+            '  [class*="registration" i], [id*="registration" i],',
+            '  [class*="signup" i], [id*="signup" i],',
+            '  [class*="modal" i], [id*="modal" i] {',
+            '    max-height: none !important;',
+            '    overflow: visible !important;',
+            '  }',
+            '}'
+          ].join('\n');
+
+          function keepFocusedFieldVisible(event) {
+            var target = event.target;
+            if (!target || !target.matches || !target.matches('input, select, textarea')) {
+              return;
+            }
+
+            setTimeout(function () {
+              try {
+                target.scrollIntoView({
+                  behavior: 'smooth',
+                  block: 'center',
+                  inline: 'nearest'
+                });
+              } catch (_) {
+                target.scrollIntoView(false);
+              }
+            }, 120);
+          }
+
+          if (!window.__appWebViewLandscapeFormFixInstalled) {
+            window.__appWebViewLandscapeFormFixInstalled = true;
+            document.addEventListener('focusin', keepFocusedFieldVisible, true);
+            window.addEventListener('orientationchange', function () {
+              setTimeout(function () {
+                var focused = document.activeElement;
+                if (focused && focused.matches && focused.matches('input, select, textarea')) {
+                  keepFocusedFieldVisible({ target: focused });
+                }
+              }, 300);
+            });
+          }
+        })();
+      ''');
+    } catch (error) {
+      debugPrint('WEBVIEW OFFER LAYOUT FIX failed: $error');
+    }
+  }
+
   Future<void> _openExternal(Uri uri) async {
     await ExternalLinkLauncher.open(uri.toString());
   }
@@ -232,6 +313,8 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -241,16 +324,22 @@ class _ConfigWebViewScreenState extends State<ConfigWebViewScreen>
       },
       child: Scaffold(
         backgroundColor: Colors.black,
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: SizedBox.expand(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (_controller != null)
-                  WebViewWidget(controller: _controller!),
-                if (_isLoading)
-                  const Center(child: CircularProgressIndicator()),
-              ],
+            child: AnimatedPadding(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              padding: EdgeInsets.only(bottom: keyboardInset),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (_controller != null)
+                    WebViewWidget(controller: _controller!),
+                  if (_isLoading)
+                    const Center(child: CircularProgressIndicator()),
+                ],
+              ),
             ),
           ),
         ),

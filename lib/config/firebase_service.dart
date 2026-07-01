@@ -110,7 +110,6 @@ class FirebaseService {
       await _initAnalytics();
       _logFirebaseProjectValidation();
       await _initLocalNotifications();
-      await _ensureAndroidNotificationsEnabledForDisplay();
       await _configureForegroundPresentation();
 
       await _tryFetchToken(logLabel: 'init');
@@ -441,7 +440,7 @@ class FirebaseService {
     );
   }
 
-  Future<bool> _ensureAndroidNotificationsEnabledForDisplay() async {
+  Future<bool> _canShowAndroidNotifications() async {
     if (!Platform.isAndroid) {
       return true;
     }
@@ -461,22 +460,8 @@ class FirebaseService {
       return true;
     }
 
-    debugPrint('FIREBASE NOTIFICATION PERMISSION: disabled, requesting');
-    final nativeStatus = await _requestAndroidNotificationPermission();
-    final pluginGranted = nativeStatus == 'authorized'
-        ? true
-        : await androidPlugin.requestNotificationsPermission();
-    final enabledAfter = await androidPlugin.areNotificationsEnabled();
-    final canShow =
-        nativeStatus == 'authorized' ||
-        pluginGranted == true ||
-        enabledAfter == true;
-
-    debugPrint(
-      'FIREBASE NOTIFICATION PERMISSION: native=$nativeStatus '
-      'plugin=$pluginGranted enabled=$enabledAfter canShow=$canShow',
-    );
-    return canShow;
+    debugPrint('FIREBASE NOTIFICATION PERMISSION: disabled');
+    return false;
   }
 
   Future<void> _showForegroundNotification(RemoteMessage message) async {
@@ -487,7 +472,7 @@ class FirebaseService {
 
     try {
       await _initLocalNotifications();
-      final canShow = await _ensureAndroidNotificationsEnabledForDisplay();
+      final canShow = await _canShowAndroidNotifications();
       if (!canShow) {
         debugPrint(
           'FIREBASE FOREGROUND NOTIFICATION BLOCKED: notification permission '
